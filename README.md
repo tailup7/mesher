@@ -1,5 +1,7 @@
 # 自動メッシングコード
-
+<p align="center">
+  <img src="https://github.com/tailup7/mesher/blob/main/picture/0.png" alt="meshing" width="1000"/>
+</p>
 ## 概要
 チューブ形状のSTLを読み込み、テトラプリズム複合メッシュを作成するコード。流体解析ができるファイルが出力される。本来なら領域分けが必要な、極端に管径が小さくなるor大きくなる部分があっても、自動でメッシュサイズを調整する。
 メッシュサイズ制御には、gmshのバックグラウンドメッシュ機能を利用している( https://gmsh.info/doc/texinfo/gmsh.html#t7 )。<br>
