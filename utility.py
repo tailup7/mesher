@@ -42,6 +42,11 @@ def find_nearest_neighbors(instance_list_A,instance_list_B):
 
     return nearest_pairs
 
+#nearest_pairs = [
+#    (Instance(1, 1.0, 2.0, 3.0), Instance(10, 1.1, 2.1, 3.1), 0.173),
+#    (Instance(2, 4.0, 5.0, 6.0), Instance(11, 3.9, 5.1, 6.2), 0.244)
+#]
+# 左が点群Aの元の点、真ん中が点群Bを探索した結果の最近接の点
 def find_right_neighbors_3d(points, reference_point):
     """
     点群を主成分分析（PCA）で最適な平面に投影し、

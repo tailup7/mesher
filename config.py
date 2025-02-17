@@ -14,5 +14,6 @@ inlet_point=None  # myio.read_txt_centerline
 outlet_point=None
 inlet_radius=None # myio.read_txt_edgeradii
 outlet_radius=None
+num_of_centerlinenodes=None
 num_of_surfacenodes=None
 num_of_innermeshnodes=None

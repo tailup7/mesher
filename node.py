@@ -1,4 +1,5 @@
 import utility
+import config
 import numpy as np
 import sys
 
@@ -44,6 +45,7 @@ class NodeAny:
         self.closest_centerlinenode_id = None
         self.closest_centerlinenode_distance = None
         self.projectable_centerlineedge_id = None
+        self.projectable_centerlineedge_distance = None
         self.edgeradius = None
         self.scalar_forbgm = None
         self.scalar_forlayer=None
@@ -62,41 +64,42 @@ class NodeAny:
                 min_distance_square = distance_square
                 self.closest_centerlinenode_id = node_centerline.id
                 self.closest_centerlinenode_distance = np.sqrt(min_distance_square)
-    
+
+    # projectable_centerlineedge の総数は 中心線 node - 1
     def find_projectable_centerlineedge(self,nodes_centerline):
         ccid = self.closest_centerlinenode_id
         if ccid==0:
             if utility.can_P_project_to_AB(self,nodes_centerline[0],nodes_centerline[1]) == True:
                 self.projectable_centerlineedge_id = 0
+                self.projectable_centerlineedge_distance = utility.calculate_PH_length(self, nodes_centerline[0], nodes_centerline[1])
         elif ccid == len(nodes_centerline)-1:
             if utility.can_P_project_to_AB(self,nodes_centerline[-2],nodes_centerline[-1]) == True:
                 self.projectable_centerlineedge_id = nodes_centerline[-2].id
+                self.projectable_centerlineedge_distance = utility.calculate_PH_length(self, nodes_centerline[-2], nodes_centerline[-1])
         else:
             distance_temp = float("inf")
             if utility.can_P_project_to_AB(self,nodes_centerline[ccid-1],nodes_centerline[ccid]) == True:
                 distance_temp = utility.calculate_PH_length(self, nodes_centerline[ccid-1], nodes_centerline[ccid])
                 self.projectable_centerlineedge_id = ccid-1
+                self.projectable_centerlineedge_distance = distance_temp
             if utility.can_P_project_to_AB(self,nodes_centerline[ccid],nodes_centerline[ccid+1]) == True:
                 if utility.calculate_PH_length(self, nodes_centerline[ccid], nodes_centerline[ccid+1]) < distance_temp:
                     self.projectable_centerlineedge_id = ccid
+                    self.projectable_centerlineedge_distance = utility.calculate_PH_length(self, nodes_centerline[ccid], nodes_centerline[ccid+1])
 
+    # edgeradii  の総数は、centerlinenodeの数 + 1
     def set_edgeradius(self,edgeradii):
         if self.projectable_centerlineedge_id != None:
             self.edgeradius = edgeradii[self.projectable_centerlineedge_id+1]
-
-    def set_scalar_forbgm(self,edgeradii,scaling_factor):
-        if self.edgeradius != None:
-            self.scalar_forbgm = self.edgeradius*scaling_factor
         else:
-            average_edgeradius = (edgeradii[self.closest_centerlinenode_id] + edgeradii[self.closest_centerlinenode_id+1])/2
-            self.scalar_forbgm = average_edgeradius*scaling_factor
-    
-    def set_scalar_forlayer(self,edgeradii):
-        if self.edgeradius != None:
-            self.scalar_forlayer = self.edgeradius*2
-        else:
-            average_edgeradius = (edgeradii[self.closest_centerlinenode_id] + edgeradii[self.closest_centerlinenode_id+1])/2
-            self.scalar_forlayer = average_edgeradius*2
+            if self.closest_centerlinenode_id==0:
+                self.edgeradius=(edgeradii[0]+edgeradii[1])/2
+            elif self.closest_centerlinenode_id==config.num_of_centerlinenodes-1:
+                self.edgeradius=(edgeradii[-1]+edgeradii[-2])/2
+            else:
+                self.edgeradius=(edgeradii[self.closest_centerlinenode_id]+edgeradii[self.closest_centerlinenode_id+1])/2
+        self.scalar_forbgm = self.edgeradius*config.scaling_factor
+        self.scalar_forlayer = self.edgeradius*2
 
 class NodesAny:
     def __init__(self):

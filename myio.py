@@ -35,6 +35,7 @@ def read_txt_centerline(filepath):
                 outlet_point = node_centerline
                 config.outlet_point=outlet_point
             index += 1
+    config.num_of_centerlinenodes=index
     config.reference_point=[sum_x/(index+1),sum_y/(index+1),sum_z/(index+1)]
     print(f"info_myio   : centerline nodes count is {len(nodes_centerline.nodes_centerline)}")
     print("info_myio    : please ignore. centerline_node_sample =  ",nodes_centerline.nodes_centerline[6])
@@ -42,22 +43,13 @@ def read_txt_centerline(filepath):
     print("info_myio    : outlet_point is", config.outlet_point)
     return nodes_centerline, node_centerline_dict
 
-
-def read_txt_edgeradii(filepath):
-    if not os.path.isfile(filepath):
-            print(f"Error: '{filepath}' does not exist.")
-            sys.exit()
-    edgeradii = []
-    with open(filepath, 'r') as file:
-        lines = file.readlines()
-    for line in lines:
-        line = line.strip()
-        if line and not line.startswith('#'):
-            edgeradii.append(float(line))
-    config.inlet_radius = edgeradii[0]
-    config.outlet_radius = edgeradii[-1]
-    print(f"info_myio    : num of edges is {len(edgeradii)}")
-    return edgeradii
+def write_txt_edgeradii(edgeradii):
+    os.makedirs("output",exist_ok = True)
+    filepath=os.path.join("output","radius.txt")
+    with open(filepath, 'w') as f:
+        f.write(f"# {len(edgeradii)}\n")
+        for edgeradius in edgeradii:
+            f.write(f"{edgeradius}\n")
 
 def read_msh_tetra():
     filepath = os.path.join("output", "bgm.msh")
@@ -115,7 +107,6 @@ def read_vtk_outersurface(filepath_vtk):
             points_section = False
             cells_section = True
             triangle_id=1   #不要..?
-            #surfacetriangle_dict={}   ### 不要?
             surfacetriangles = cell.Triangles()
             continue
         if points_section:
@@ -140,7 +131,6 @@ def read_vtk_outersurface(filepath_vtk):
                 node1 = surfacenode_dict[cell_data[2]+1]
                 node2 = surfacenode_dict[cell_data[3]+1]
                 surfacetriangle = cell.Triangle(triangle_id, node0, node1, node2)
-                #surfacetriangle_dict[triangle_id] = surfacetriangle   ### 不要では?
                 surfacetriangles.append(surfacetriangle)
                 triangle_id += 1
     print("info_myio    : num of outersurface points is ",node_id-1)

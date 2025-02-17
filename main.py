@@ -5,8 +5,8 @@ import myio
 import config
 import models
 import utility
+import radius
 import os
-import sys
 
 # TODO: インスタンスのリストをインスタンスとして定義すると、分かりにくいし冗長になるので、インスタンスのリストは普通に 
 #           nodes_centerline = [] のように定義する
@@ -16,10 +16,6 @@ N=4     # num of layers
 r=1.4   # growth rate of layer's thickness
 h=0.12  # first layer thickness
 
-# parameter for background mesh
-meshsize = 0.5 
-scaling_factor = 0.2
-
 # parameter for boundarylater
 first_layer_ratio = 0.015 # % of diameter
 growth_rate = 1.2
@@ -28,28 +24,24 @@ num_of_layers = 6
 # input file
 filepath_stl = os.path.join("input", "WALL.stl")
 filepath_centerline = os.path.join("input", "centerline.txt")
-filepath_edgeradii = os.path.join("input", "radius.txt")  # TODO : radius.txtを読み込むのではなく、入力されたSTLと中心線から計算するように変更
 
 # backgroundmeshを作成
-nodeids, coords = mygmsh.generate_bgm(meshsize,filepath_stl)
+nodeids, coords ,filepath_stl_bgmsurface = mygmsh.generate_bgm(filepath_stl)
+nodes_centerline, node_centerline_dict = myio.read_txt_centerline(filepath_centerline) #idが0スタートになってしまってるが、gmshと統一するなら0スタートに
+edgeradii = radius.calculate_edgeradius(nodes_centerline.nodes_centerline, filepath_stl_bgmsurface)
 
 # スカラー値(半径)を backgroundmesh にセットし、bgm.posとして出力
-nodes_centerline, node_centerline_dict = myio.read_txt_centerline(filepath_centerline) #idが0スタートになってしまってるが、gmshと統一するなら0スタートに
 nodes_any = node.NodesAny()
 node.coords_to_nodes(nodeids,coords,nodes_any)
-edgeradii = myio.read_txt_edgeradii(filepath_edgeradii)   # nodes_anyがインスタンスになっているために、返り値がなくても動作するが、インスタンスのリストを
+                                                        # nodes_anyがインスタンスになっているために、返り値がなくても動作するが、インスタンスのリストを
 nodeany_dict={}                                           # インスタンスにする意味はないし、使いにくいので、nodes_anyは普通のリストに変える
 for node_any in nodes_any.nodes_any:
     nodeany_dict[node_any.id] = node_any  
     node_any.find_closest_centerlinenode(nodes_centerline.nodes_centerline)
     node_any.find_projectable_centerlineedge(nodes_centerline.nodes_centerline)
     node_any.set_edgeradius(edgeradii)
-    node_any.set_scalar_forbgm(edgeradii,scaling_factor)
 tetra_list = myio.read_msh_tetra()
 myio.write_pos_bgm(tetra_list,nodeany_dict)
-
-# bgm.posを参照し、メッシュサイズが非一様なテトラ・プリズムメッシュを生成
-# mygmsh.tetraprism_mutable(filepath_stl,N,r,h)  #### たぶんもういらない
 
 # bgm.posを参照し、粗密のある表面メッシュをVTK形式で出力
 filepath_vtk = mygmsh.surfacemesh(filepath_stl)
@@ -59,9 +51,7 @@ for surfacenode in surfacenodes.nodes_any:
     surfacenode.find_closest_centerlinenode(nodes_centerline.nodes_centerline)
     surfacenode.find_projectable_centerlineedge(nodes_centerline.nodes_centerline)
     surfacenode.set_edgeradius(edgeradii)
-    surfacenode.set_scalar_forlayer(edgeradii)
     surfacenode_dict[surfacenode.id] = surfacenode
-
 
 # 入力 surfacetriangles,
 # 一番内側の層を作る#################################################################################
@@ -91,10 +81,8 @@ for i in range(1, config.num_of_surfacenodes+1): ### ここ変えた
     mostinnersurfacenode_dict[i].y = surfacenode_dict[i].y + mostinnersurfacenode_dict[i].y/mostinnersurfacenode_dict[i].sumcountor
     mostinnersurfacenode_dict[i].z = surfacenode_dict[i].z + mostinnersurfacenode_dict[i].z/mostinnersurfacenode_dict[i].sumcountor
     mostinnersurfacenodes.append(mostinnersurfacenode_dict[i])
-mostinnersurfacenode_sorted = sorted(mostinnersurfacenodes, key=lambda obj: obj.id)   ## 今のところ使っていない
 
 mostinnersurfacetriangles=[]
-mostinnersurfacetriangle_dict={}   ##不要...?
 for surfacetriangle in surfacetriangles.triangles:
     node0 = mostinnersurfacenode_dict[surfacetriangle.node0.id]  # idは同じだが、座標だけ変わる
     node1 = mostinnersurfacenode_dict[surfacetriangle.node1.id]
@@ -104,7 +92,6 @@ for surfacetriangle in surfacetriangles.triangles:
     node2.find_closest_centerlinenode(nodes_centerline.nodes_centerline)
     mostinnersurfacetriangle = cell.Triangle(surfacetriangle.id,node0,node1,node2)
     mostinnersurfacetriangle.calc_unitnormal(node_centerline_dict)
-    mostinnersurfacetriangle_dict[surfacetriangle.id] = mostinnersurfacetriangle  ## 不要..?
     mostinnersurfacetriangles.append(mostinnersurfacetriangle)
 ####################################################################################
 #出力 mostinnersurfacetriangles, mostinnersurfacenodes
@@ -123,8 +110,6 @@ for node_innerwall, mostinnersurfacenode,distance in nearest_pairs:
     cumulative_error += distance
     nodes_layersurface_dict1[mostinnersurfacenode.id] = node_innerwall.id    # 表面のみだったときのid → 内部メッシュも含めたときのid
     nodes_layersurface_dict2[node_innerwall.id] = mostinnersurfacenode.id    # 内部メッシュも含めた node id → 表面メッシュのみだったときの node id
-print("info_main    : cumulative error is ", cumulative_error)
-print("check for nodes_layersurface_dict1", nodes_layersurface_dict1[500])
 
 # make first layer
 nodes_on_inletboundaryedge=[]
@@ -142,16 +127,13 @@ for surfacenode in surfacenodes.nodes_any:
 
     mesh.nodes.append(surfacenode) ##########
     mesh.num_of_nodes += 1
-print("num of nodes_on_inletboundaryedge is",len(nodes_on_inletboundaryedge))
-# config.num_of_innermeshnodes
+
 for surfacetriangle in surfacetriangles.triangles:
     # surfacetriangle.node0.id = surfacetriangle.node0.id +config.num_of_innermeshnodes #surfacetriangleを構成するのはsurfacenodeであり、その
     # surfacetriangle.node1.id = surfacetriangle.node1.id +config.num_of_innermeshnodes # idはすでにうえで変えている。
     # surfacetriangle.node2.id = surfacetriangle.node2.id +config.num_of_innermeshnodes
     mesh.triangles_WALL.append(surfacetriangle)
     mesh.num_of_elements += 1
-
-print("config.num_of_innermeshnodes is ",config.num_of_innermeshnodes)
 
 models.make_nth_layer(surfacetriangles,surfacenode_dict,nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,nodes_layersurface_dict1,0.012,mesh)
 

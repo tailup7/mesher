@@ -55,7 +55,6 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         nth_layer_surfacenodes.append(nth_layer_surfacenode_dict[i])
         mesh.nodes.append(nth_layer_surfacenode_dict[i])
         mesh.num_of_nodes += 1
-    nth_layer_surfacenode_sorted = sorted(nth_layer_surfacenodes, key=lambda obj: obj.id)   ## 今のところ使っていない
 
     # 流入出面の四角形
     sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_inletboundaryedge, config.reference_point)
@@ -78,8 +77,6 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_elements+=1
 
     # プリズム
-    nth_layer_prisms=[]
-    mostinnersurfacetriangle_dict={}   ##不要...?
     for surfacetriangle in surfacetriangles.triangles:
         prism_id0=surfacetriangle.node0.id + config.num_of_surfacenodes
         prism_id1=surfacetriangle.node1.id + config.num_of_surfacenodes
