@@ -27,7 +27,7 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
     nth_layer_surfacenode_dict={}
     first_id=float("inf")
     last_id=0
-    for surfacetriangle in surfacetriangles.triangles:
+    for surfacetriangle in surfacetriangles:
         nodes = [surfacetriangle.node0, surfacetriangle.node1, surfacetriangle.node2]
         for onenode in nodes:
             if first_id > onenode.id:
@@ -77,7 +77,7 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_elements+=1
 
     # プリズム
-    for surfacetriangle in surfacetriangles.triangles:
+    for surfacetriangle in surfacetriangles:
         prism_id0=surfacetriangle.node0.id + config.num_of_surfacenodes
         prism_id1=surfacetriangle.node1.id + config.num_of_surfacenodes
         prism_id2=surfacetriangle.node2.id + config.num_of_surfacenodes
@@ -93,7 +93,7 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
     n3_layer_surfacenode_dict={}
     first_id=float("inf")
     last_id=0
-    for surfacetriangle in surfacetriangles.triangles:
+    for surfacetriangle in surfacetriangles:
         nodes = [surfacetriangle.node0, surfacetriangle.node1, surfacetriangle.node2]
         for onenode in nodes:
             if first_id > onenode.id:
@@ -143,7 +143,7 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_elements+=1
 
     # プリズム
-    for surfacetriangle in surfacetriangles.triangles:
+    for surfacetriangle in surfacetriangles:
         prism_id0=surfacetriangle.node0.id + config.num_of_surfacenodes*2
         prism_id1=surfacetriangle.node1.id + config.num_of_surfacenodes*2
         prism_id2=surfacetriangle.node2.id + config.num_of_surfacenodes*2
@@ -159,7 +159,7 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
     n4_layer_surfacenode_dict={}
     first_id=float("inf")
     last_id=0
-    for surfacetriangle in surfacetriangles.triangles:
+    for surfacetriangle in surfacetriangles:
         nodes = [surfacetriangle.node0, surfacetriangle.node1, surfacetriangle.node2]
         for onenode in nodes:
             if first_id > onenode.id:
@@ -209,7 +209,7 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_elements+=1
 
     # プリズム
-    for surfacetriangle in surfacetriangles.triangles:
+    for surfacetriangle in surfacetriangles:
         prism_id0=surfacetriangle.node0.id + config.num_of_surfacenodes*3
         prism_id1=surfacetriangle.node1.id + config.num_of_surfacenodes*3
         prism_id2=surfacetriangle.node2.id + config.num_of_surfacenodes*3
@@ -243,7 +243,7 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_elements+=1
         
     # プリズム
-    for surfacetriangle in surfacetriangles.triangles:
+    for surfacetriangle in surfacetriangles:
         prism_id0=nodes_layersurface_dict1[surfacetriangle.node0.id-config.num_of_innermeshnodes]
         prism_id1=nodes_layersurface_dict1[surfacetriangle.node1.id-config.num_of_innermeshnodes]
         prism_id2=nodes_layersurface_dict1[surfacetriangle.node2.id-config.num_of_innermeshnodes]

@@ -11,7 +11,7 @@ def read_txt_centerline(filepath):
     with open(filepath, 'r') as file:
         lines = file.readlines()
     valid_lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
-    nodes_centerline = node.NodesCenterline()
+    nodes_centerline = []
     node_centerline_dict={}
     index = 0
     sum_x=0
@@ -37,10 +37,6 @@ def read_txt_centerline(filepath):
             index += 1
     config.num_of_centerlinenodes=index
     config.reference_point=[sum_x/(index+1),sum_y/(index+1),sum_z/(index+1)]
-    print(f"info_myio   : centerline nodes count is {len(nodes_centerline.nodes_centerline)}")
-    print("info_myio    : please ignore. centerline_node_sample =  ",nodes_centerline.nodes_centerline[6])
-    print("info_myio    : inlet_point is", config.inlet_point)
-    print("info_myio    : outlet_point is", config.outlet_point)
     return nodes_centerline, node_centerline_dict
 
 def write_txt_edgeradii(edgeradii):
@@ -101,13 +97,13 @@ def read_vtk_outersurface(filepath_vtk):
             points_section = True
             node_id=1
             surfacenode_dict = {}
-            surfacenodes = node.NodesAny() 
+            surfacenodes = []
             continue
         if line.startswith("CELLS"):
             points_section = False
             cells_section = True
             triangle_id=1   #不要..?
-            surfacetriangles = cell.Triangles()
+            surfacetriangles = []
             continue
         if points_section:
             if not line:

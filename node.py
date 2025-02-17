@@ -5,11 +5,12 @@ import sys
 
 # gmsh.model.mesh.getNodes() の1つめの返り値は、得られた全Nodeのid のリスト。
 # 2つめの返り値は、得られる全Nodeのx,y,z座標成分をまとめたリスト。これらをnodeごとの情報に整理する
-def coords_to_nodes(nodeids, coords, nodes_any):
+def coords_to_nodes(nodeids, coords):
     if len(coords)%3!=0:
         print("mylib_info   : coords_to_nodes error.")
         sys.exit()
     else:
+        nodes_any=[]
         for i in range(len(nodeids)):
             x = coords[3*i]
             y = coords[3*i+1]
@@ -17,7 +18,7 @@ def coords_to_nodes(nodeids, coords, nodes_any):
             id = nodeids[i]
             node_any = NodeAny(id,x,y,z)
             nodes_any.append(node_any)
-    print(f"info_utility   : node count after postprocess gmsh is {len(nodes_any.nodes_any)}")
+    return nodes_any
 
 class NodeCenterline:
     def __init__(self,id,x,y,z):
@@ -28,13 +29,6 @@ class NodeCenterline:
 
     def __str__(self):
         return f"NodeAny(id={self.id}, x={self.x}, y={self.y}, z={self.z})"
-
-class NodesCenterline:
-    def __init__(self):
-        self.nodes_centerline=[]
-
-    def append(self,node_centerline):
-        self.nodes_centerline.append(node_centerline)
 
 class NodeAny:
     def __init__(self,id,x,y,z):
@@ -100,9 +94,3 @@ class NodeAny:
                 self.edgeradius=(edgeradii[self.closest_centerlinenode_id]+edgeradii[self.closest_centerlinenode_id+1])/2
         self.scalar_forbgm = self.edgeradius*config.scaling_factor
         self.scalar_forlayer = self.edgeradius*2
-
-class NodesAny:
-    def __init__(self):
-        self.nodes_any=[]
-    def append(self,node_any):
-        self.nodes_any.append(node_any)

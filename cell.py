@@ -29,12 +29,6 @@ class Triangle:
         z = (self.node0.z + self.node1.z + self.node2.z)/3
         self.centroid=[x,y,z]
 
-class Triangles:
-    def __init__(self):
-        self.triangles=[]
-    def append(self,triangle):
-        self.triangles.append(triangle)
-
 class Quad:
     def __init__(self,id0,id1,id2,id3):
         self.id0=id0
