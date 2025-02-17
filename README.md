@@ -11,3 +11,9 @@
 ## まだプロトタイプです
 かなりコードが汚いのと、不要な処理、不要な入力ファイルがある。これからブラッシュアップする。<br>
 OpenFOAMで計算が正常に処理されることを確認した。
+<br>
+
+<p align="center">
+  <img src="https://github.com/tailup7/mesher/blob/main/picture/00.png" alt="meshing" width="600"/>
+</p>
+
