@@ -6,8 +6,9 @@ import config
 import models
 import utility
 import radius
+import gmsh
 import os
-
+import sys
 # parameter for tetraprism
 N=4     # num of layers
 r=1.4   # growth rate of layer's thickness
@@ -103,6 +104,7 @@ for node_innerwall, mostinnersurfacenode,distance in nearest_pairs:
     cumulative_error += distance
     nodes_layersurface_dict1[mostinnersurfacenode.id] = node_innerwall.id    # 表面のみだったときのid → 内部メッシュも含めたときのid
     nodes_layersurface_dict2[node_innerwall.id] = mostinnersurfacenode.id    # 内部メッシュも含めた node id → 表面メッシュのみだったときの node id
+print("cumulative eroor is", cumulative_error)
 
 # make first layer
 nodes_on_inletboundaryedge=[]
@@ -128,10 +130,13 @@ for surfacetriangle in surfacetriangles:
     mesh.triangles_WALL.append(surfacetriangle)
     mesh.num_of_elements += 1
 
-models.make_nth_layer(surfacetriangles,surfacenode_dict,nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,nodes_layersurface_dict1,0.012,mesh)
+models.make_nth_layer(nodes_centerline,surfacetriangles,surfacenode_dict,nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,nodes_layersurface_dict1,0.012,mesh)
 
 myio.write_msh_allmesh(mesh)
-mygmsh.gmsh.initialize()
-mygmsh.gmsh.merge(os.path.join("output", "allmesh.msh"))
+
+gmsh.initialize()
+gmsh.merge(os.path.join("output", "allmesh.msh"))
+gmsh.write(os.path.join("output","allmesh.vtk"))
 mygmsh.GUI_setting()
 mygmsh.gmsh.fltk.run()
+gmsh.finalize()

@@ -3,6 +3,7 @@ import cell
 import config
 import sys
 import os
+import numpy as np
 
 def read_txt_centerline(filepath):
     if not os.path.isfile(filepath):
@@ -36,7 +37,7 @@ def read_txt_centerline(filepath):
                 config.outlet_point=outlet_point
             index += 1
     config.num_of_centerlinenodes=index
-    config.reference_point=[sum_x/(index+1),sum_y/(index+1),sum_z/(index+1)]
+    config.reference_point=np.array([sum_x/index,sum_y/index,sum_z/index])
     return nodes_centerline, node_centerline_dict
 
 def write_txt_edgeradii(edgeradii):
@@ -262,13 +263,12 @@ def read_msh_innermesh(filepath,mesh):
     # 99(innerwall)と20or30(端面)を構成するNodeはboundaryNodeとして抽出する
     nodesid_on_inlet_boundaryedge = nodesid_composing_innerwalltriangle & nodesid_composing_inlettriangle
     nodesid_on_outlet_boundaryedge= nodesid_composing_innerwalltriangle & nodesid_composing_outlettriangle
-    print("num of nodesid_composing_innerwalltriangle is ",nodesid_composing_innerwalltriangle)
+    print("num of nodesid_composing_innerwalltriangle is ",len(nodesid_composing_innerwalltriangle))
     print("num of nodesid_on_inlet_boundaryedge is ",len(nodesid_on_inlet_boundaryedge))
     for nodeid in nodesid_on_inlet_boundaryedge:
         node_innermesh_dict[nodeid].on_inlet_boundaryedge = True
     for nodeid in nodesid_on_outlet_boundaryedge:
         node_innermesh_dict[nodeid].on_outlet_boundaryedge = True
-
     config.num_of_innermeshnodes = mesh.num_of_nodes
 
     # triangle_innerwall_dictは不要かも

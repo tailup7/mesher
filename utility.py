@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial import KDTree
 from sklearn.decomposition import PCA
-
+import sys
 def can_P_project_to_AB(P,A,B):
 
 #             projectable                        Not projectable
@@ -28,6 +28,20 @@ def calculate_PH_length(P,A,B):
     vector_AH = t*vector_AB
     vector_PH = vector_AH - vector_AP
     return(np.linalg.norm(vector_PH))
+
+def calculate_centroid(points):
+    x_sum=0
+    y_sum=0
+    z_sum=0
+    for i in range(len(points)):
+        x_sum += points[i].x
+        y_sum += points[i].y
+        z_sum += points[i].z
+    x=x_sum/len(points)
+    y=y_sum/len(points)
+    z=z_sum/len(points)
+    return np.array([x,y,z])
+
 
 # kdtree
 # 返り値は 
@@ -77,8 +91,33 @@ def find_right_neighbors_3d(points, reference_point):
 
     # 6. 右隣の点を対応付け（ソート順で一つ次の点を右隣とする）
     right_neighbors = np.roll(sorted_points, shift=-1).tolist()
-
+    for i in range(len(sorted_points)):
+        print("sorted_points=", sorted_points[i].id,sorted_points[i].x,sorted_points[i].y,sorted_points[i].z)
+    for i in range(len(right_neighbors)):
+        print("right_neighbors=",right_neighbors[i].id,right_neighbors[i].x,right_neighbors[i].y,right_neighbors[i].z)
+    sys.exit()
     return sorted_points, right_neighbors
+
+def vector(point):
+    return np.array([point.x,point.y,point.z])
+
+def find_right_neighbors(points,innerpoint_vec):
+    centroid=calculate_centroid(points)
+    point_temp=points[0]
+    point_temp_next = None
+    sorted_points=[]
+    min_distance=float("inf")
+    while point_temp.right_node_id==None:
+        for point in points:
+            if point_temp.id!=point.id:
+                if np.dot(np.cross(vector(point_temp)-centroid,vector(point)-centroid),centroid-innerpoint_vec) >0:
+                    distance = np.linalg.norm(vector(point)-vector(point_temp))
+                    if distance < min_distance:
+                        min_distance = distance
+                        point_temp.right_node_id = point.id
+                        point_temp_next = point
+        point_temp=point_temp_next
+        min_distance=float("inf")
 
 #Pointはid,x,y,zをインスタンス変数に持つインスタンス
 #points = [

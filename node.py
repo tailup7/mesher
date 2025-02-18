@@ -46,6 +46,7 @@ class NodeAny:
         self.sumcountor = 1 
         self.on_inlet_boundaryedge=False
         self.on_outlet_boundaryedge=False
+        self.right_node_id=None
 
     def __str__(self):
         return f"NodeAny(id={self.id}, x={self.x}, y={self.y}, z={self.z})"

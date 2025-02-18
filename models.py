@@ -3,6 +3,7 @@ import config
 import node
 import cell
 import utility
+import numpy as np
 
 @dataclass
 class Mesh:
@@ -21,7 +22,7 @@ class Mesh:
     nodes_innersurface:list = field(default_factory=list)
 
 
-def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,nodes_layersurface_dict1,thickratio,mesh):
+def make_nth_layer(nodes_centerline,surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,nodes_layersurface_dict1,thickratio,mesh):
     #2層目のsurfacenode
     temp = set()
     nth_layer_surfacenode_dict={}
@@ -57,21 +58,23 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_nodes += 1
 
     # 流入出面の四角形
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_inletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id
-        quad_id1=right_neighbors[i].id
-        quad_id2=right_neighbors[i].id + config.num_of_surfacenodes
-        quad_id3=sorted_points[i].id + config.num_of_surfacenodes
+    innerpoint_vec = np.array([nodes_centerline[5].x,nodes_centerline[5].y,nodes_centerline[5].z])
+    utility.find_right_neighbors(nodes_on_inletboundaryedge, innerpoint_vec)
+    for node_on_inletboundaryedge in nodes_on_inletboundaryedge:
+        quad_id0=node_on_inletboundaryedge.id
+        quad_id1=node_on_inletboundaryedge.right_node_id
+        quad_id2=node_on_inletboundaryedge.right_node_id + config.num_of_surfacenodes
+        quad_id3=node_on_inletboundaryedge.id + config.num_of_surfacenodes
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_INLET.append(quad)
         mesh.num_of_elements+=1
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_outletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id
-        quad_id1=right_neighbors[i].id
-        quad_id2=right_neighbors[i].id + config.num_of_surfacenodes
-        quad_id3=sorted_points[i].id + config.num_of_surfacenodes
+    innerpoint_vec = np.array([nodes_centerline[-5].x,nodes_centerline[-5].y,nodes_centerline[-5].z])
+    utility.find_right_neighbors(nodes_on_outletboundaryedge, innerpoint_vec)
+    for node_on_outletboundaryedge in nodes_on_outletboundaryedge:
+        quad_id0=node_on_outletboundaryedge.id
+        quad_id1=node_on_outletboundaryedge.right_node_id
+        quad_id2=node_on_outletboundaryedge.right_node_id + config.num_of_surfacenodes
+        quad_id3=node_on_outletboundaryedge.id + config.num_of_surfacenodes
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_OUTLET.append(quad)
         mesh.num_of_elements+=1
@@ -123,21 +126,23 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_nodes += 1
 
     # 流入出面の四角形
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_inletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id+ config.num_of_surfacenodes
-        quad_id1=right_neighbors[i].id+ config.num_of_surfacenodes
-        quad_id2=right_neighbors[i].id + config.num_of_surfacenodes*2
-        quad_id3=sorted_points[i].id + config.num_of_surfacenodes*2
+    innerpoint_vec = np.array([nodes_centerline[5].x,nodes_centerline[5].y,nodes_centerline[5].z])
+    utility.find_right_neighbors(nodes_on_inletboundaryedge, innerpoint_vec)
+    for node_on_inletboundaryedge in nodes_on_inletboundaryedge:
+        quad_id0=node_on_inletboundaryedge.id+config.num_of_surfacenodes
+        quad_id1=node_on_inletboundaryedge.right_node_id+config.num_of_surfacenodes
+        quad_id2=node_on_inletboundaryedge.right_node_id + config.num_of_surfacenodes*2
+        quad_id3=node_on_inletboundaryedge.id + config.num_of_surfacenodes*2
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_INLET.append(quad)
         mesh.num_of_elements+=1
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_outletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id+ config.num_of_surfacenodes
-        quad_id1=right_neighbors[i].id+ config.num_of_surfacenodes
-        quad_id2=right_neighbors[i].id + config.num_of_surfacenodes*2
-        quad_id3=sorted_points[i].id + config.num_of_surfacenodes*2
+    innerpoint_vec = np.array([nodes_centerline[-5].x,nodes_centerline[-5].y,nodes_centerline[-5].z])
+    utility.find_right_neighbors(nodes_on_outletboundaryedge, innerpoint_vec)
+    for node_on_outletboundaryedge in nodes_on_outletboundaryedge:
+        quad_id0=node_on_outletboundaryedge.id+config.num_of_surfacenodes
+        quad_id1=node_on_outletboundaryedge.right_node_id+config.num_of_surfacenodes
+        quad_id2=node_on_outletboundaryedge.right_node_id + config.num_of_surfacenodes*2
+        quad_id3=node_on_outletboundaryedge.id + config.num_of_surfacenodes*2
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_OUTLET.append(quad)
         mesh.num_of_elements+=1
@@ -189,21 +194,23 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
         mesh.num_of_nodes += 1
 
     # 流入出面の四角形
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_inletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id+ config.num_of_surfacenodes*2
-        quad_id1=right_neighbors[i].id+ config.num_of_surfacenodes*2
-        quad_id2=right_neighbors[i].id + config.num_of_surfacenodes*3
-        quad_id3=sorted_points[i].id + config.num_of_surfacenodes*3
+    innerpoint_vec = np.array([nodes_centerline[5].x,nodes_centerline[5].y,nodes_centerline[5].z])
+    utility.find_right_neighbors(nodes_on_inletboundaryedge, innerpoint_vec)
+    for node_on_inletboundaryedge in nodes_on_inletboundaryedge:
+        quad_id0=node_on_inletboundaryedge.id+config.num_of_surfacenodes*2
+        quad_id1=node_on_inletboundaryedge.right_node_id+config.num_of_surfacenodes*2
+        quad_id2=node_on_inletboundaryedge.right_node_id + config.num_of_surfacenodes*3
+        quad_id3=node_on_inletboundaryedge.id + config.num_of_surfacenodes*3
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_INLET.append(quad)
         mesh.num_of_elements+=1
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_outletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id+ config.num_of_surfacenodes*2
-        quad_id1=right_neighbors[i].id+ config.num_of_surfacenodes*2
-        quad_id2=right_neighbors[i].id + config.num_of_surfacenodes*3
-        quad_id3=sorted_points[i].id + config.num_of_surfacenodes*3
+    innerpoint_vec = np.array([nodes_centerline[-5].x,nodes_centerline[-5].y,nodes_centerline[-5].z])
+    utility.find_right_neighbors(nodes_on_outletboundaryedge, innerpoint_vec)
+    for node_on_outletboundaryedge in nodes_on_outletboundaryedge:
+        quad_id0=node_on_outletboundaryedge.id+config.num_of_surfacenodes*2
+        quad_id1=node_on_outletboundaryedge.right_node_id+config.num_of_surfacenodes*2
+        quad_id2=node_on_outletboundaryedge.right_node_id + config.num_of_surfacenodes*3
+        quad_id3=node_on_outletboundaryedge.id + config.num_of_surfacenodes*3
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_OUTLET.append(quad)
         mesh.num_of_elements+=1
@@ -223,21 +230,23 @@ def make_nth_layer(surfacetriangles,surfacenode_dict, nodes_on_inletboundaryedge
 
 #### 最後の層
     # 流入出面の四角形
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_inletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id+ config.num_of_surfacenodes*3
-        quad_id1=right_neighbors[i].id+ config.num_of_surfacenodes*3
-        quad_id2=nodes_layersurface_dict1[right_neighbors[i].id-config.num_of_innermeshnodes]
-        quad_id3=nodes_layersurface_dict1[sorted_points[i].id-config.num_of_innermeshnodes]
+    innerpoint_vec = np.array([nodes_centerline[5].x,nodes_centerline[5].y,nodes_centerline[5].z])
+    utility.find_right_neighbors(nodes_on_inletboundaryedge, innerpoint_vec)
+    for node_on_inletboundaryedge in nodes_on_inletboundaryedge:
+        quad_id0=node_on_inletboundaryedge.id+ config.num_of_surfacenodes*3
+        quad_id1=node_on_inletboundaryedge.right_node_id+ config.num_of_surfacenodes*3
+        quad_id2=nodes_layersurface_dict1[node_on_inletboundaryedge.right_node_id-config.num_of_innermeshnodes]
+        quad_id3=nodes_layersurface_dict1[node_on_inletboundaryedge.id-config.num_of_innermeshnodes]
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_INLET.append(quad)
         mesh.num_of_elements+=1
-    sorted_points, right_neighbors = utility.find_right_neighbors_3d(nodes_on_outletboundaryedge, config.reference_point)
-    for i in range(len(sorted_points)):
-        quad_id0=sorted_points[i].id+ config.num_of_surfacenodes*3
-        quad_id1=right_neighbors[i].id+ config.num_of_surfacenodes*3
-        quad_id2=nodes_layersurface_dict1[right_neighbors[i].id-config.num_of_innermeshnodes]
-        quad_id3=nodes_layersurface_dict1[sorted_points[i].id-config.num_of_innermeshnodes]
+    innerpoint_vec = np.array([nodes_centerline[-5].x,nodes_centerline[-5].y,nodes_centerline[-5].z])
+    utility.find_right_neighbors(nodes_on_outletboundaryedge, innerpoint_vec)
+    for node_on_outletboundaryedge in nodes_on_outletboundaryedge:
+        quad_id0=node_on_outletboundaryedge.id+ config.num_of_surfacenodes*3
+        quad_id1=node_on_outletboundaryedge.right_node_id+ config.num_of_surfacenodes*3
+        quad_id2=nodes_layersurface_dict1[node_on_outletboundaryedge.right_node_id-config.num_of_innermeshnodes]
+        quad_id3=nodes_layersurface_dict1[node_on_outletboundaryedge.id-config.num_of_innermeshnodes]
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
         mesh.quadrangles_OUTLET.append(quad)
         mesh.num_of_elements+=1
