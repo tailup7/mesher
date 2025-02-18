@@ -58,6 +58,3 @@ def calculate_edgeradius(nodes_centerline,filepath_stl_bgmsurface):
     config.outlet_radius = edgeradii_smooth[-1]
     myio.write_txt_edgeradii(edgeradii_smooth)
     return edgeradii_smooth
-
-
-

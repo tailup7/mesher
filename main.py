@@ -8,7 +8,7 @@ import utility
 import radius
 import gmsh
 import os
-import sys
+
 # parameter for tetraprism
 N=4     # num of layers
 r=1.4   # growth rate of layer's thickness
