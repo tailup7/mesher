@@ -1,3 +1,4 @@
+import config
 import numpy as np
 from scipy.spatial import KDTree
 
@@ -73,3 +74,13 @@ def find_right_neighbors(points,innerpoint_vec):
                         point_temp_next = point
         point_temp=point_temp_next
         min_distance=float("inf")
+
+def calculate_nth_layer_thickratio(n):
+    thickratio_each_layer=[None]*config.num_of_layers
+    thickratio_each_layer[0]=config.first_layer_ratio
+    total_thickratio = 0
+    for i in range(1,n):
+        thickratio_each_layer[i] = thickratio_each_layer[i-1]*config.growth_rate
+    for i in range(n):
+        total_thickratio += thickratio_each_layer[i]
+    return total_thickratio

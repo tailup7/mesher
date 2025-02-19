@@ -37,7 +37,6 @@ def read_txt_centerline(filepath):
                 config.outlet_point=outlet_point
             index += 1
     config.num_of_centerlinenodes=index
-    config.reference_point=np.array([sum_x/index,sum_y/index,sum_z/index])
     return nodes_centerline, node_centerline_dict
 
 def write_txt_edgeradii(edgeradii):
@@ -152,19 +151,11 @@ def write_stl_mostinnersurface(triangle_list):
 
 def read_msh_innermesh(filepath,mesh):
 
-    nodes_innermesh = []
     nodes_innerwall=[]
-    triangles_innerwall=[]
-    triangles_inlet=[]
-    triangles_outlet=[]
     node_innermesh_dict={}
-    triangle_innerwall_dict={}    ##不要..?
-    triangle_inlet_dict={}   ###### 不要かも
-    triangle_outlet_dict={}  ######
     nodesid_composing_innerwalltriangle=set()
     nodesid_composing_inlettriangle=set()
     nodesid_composing_outlettriangle=set()
-
 
     with open(filepath, "r") as file:
         lines = file.readlines()
@@ -198,7 +189,6 @@ def read_msh_innermesh(filepath,mesh):
             x, y, z = map(float, parts[1:4])
             node_innermesh = node.NodeAny(node_id, x, y, z) 
             node_innermesh_dict[node_id]=node_innermesh      
-            nodes_innermesh.append(node_innermesh)    ##mesh.nodesがあるのでおそらく不要
             mesh.nodes.append(node_innermesh)
             mesh.num_of_nodes+=1
 
@@ -232,22 +222,16 @@ def read_msh_innermesh(filepath,mesh):
                     nodes_innerwall.append(node1)
                     nodes_innerwall.append(node2)
                     triangle_innerwall = cell.Triangle(elem_id, node0, node1, node2)
-                    triangle_innerwall_dict[elem_id] = triangle_innerwall ##不要..?
-                    triangles_innerwall.append(triangle_innerwall)
                     nodesid_composing_innerwalltriangle.update(map(int, parts[-3:]))
 
                 elif physical_group == 20:
                     triangle_inlet = cell.Triangle(elem_id, node0, node1, node2)
-                    triangle_inlet_dict[elem_id] = triangle_inlet
-                    triangles_inlet.append(triangle_inlet)     ####################### 不要かも
                     nodesid_composing_inlettriangle.update(map(int, parts[-3:])) ##########
                     mesh.triangles_INLET.append(triangle_inlet)
                     mesh.num_of_elements += 1
 
                 elif physical_group == 30:
                     triangle_outlet = cell.Triangle(elem_id, node0, node1, node2)
-                    triangle_outlet_dict[elem_id] = triangle_outlet
-                    triangles_outlet.append(triangle_outlet)           ###############
                     nodesid_composing_outlettriangle.update(map(int, parts[-3:])) #########
                     mesh.triangles_OUTLET.append(triangle_outlet)
                     mesh.num_of_elements += 1
@@ -271,13 +255,12 @@ def read_msh_innermesh(filepath,mesh):
         node_innermesh_dict[nodeid].on_outlet_boundaryedge = True
     config.num_of_innermeshnodes = mesh.num_of_nodes
 
-    # triangle_innerwall_dictは不要かも
-    return  nodes_innerwall, node_innermesh_dict, triangles_innerwall, triangle_innerwall_dict, mesh
+    return  nodes_innerwall, node_innermesh_dict, mesh
 
 def write_msh_allmesh(mesh):
     filepath = os.path.join("output", "allmesh.msh")
     with open(filepath, "w") as f:
-        # $MeshFormat セクション
+        # $MeshFormat 
         f.write("$MeshFormat\n")
         f.write("2.2 0 8\n")
         f.write("$EndMeshFormat\n")
@@ -289,7 +272,7 @@ def write_msh_allmesh(mesh):
         f.write("3 100 \"INTERNAL\"\n")
         f.write("$EndPhysicalNames\n")
 
-        # $Nodes セクション 
+        # $Nodes 
         f.write("$Nodes\n")
         f.write(f"{mesh.num_of_nodes}\n")  
         nodes_sorted = sorted(mesh.nodes, key=lambda obj: obj.id)
@@ -297,7 +280,7 @@ def write_msh_allmesh(mesh):
                 f.write(f"{node.id} {node.x} {node.y} {node.z}\n")
         f.write("$EndNodes\n")
 
-        # elementsセクション
+        # elements
         f.write("$Elements\n")
         f.write(f"{mesh.num_of_elements}\n")
         elements_countor=0
