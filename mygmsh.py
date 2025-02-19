@@ -10,10 +10,8 @@ def generate_bgm(filepath):
     path = os.path.dirname(os.path.abspath(__file__))
     gmsh.merge(os.path.join(path, filepath))  
     
-    # 読み込んだ形状を設定した角度で分解
-    # forReparametrizationをTrueにしないとメッシングで時間がかかる
+
     gmsh.model.mesh.classifySurfaces(angle = 40 * np.pi / 180, boundary=True, forReparametrization=True)
-    # classifySurfacesとセットで用いる
     gmsh.model.mesh.createGeometry()
     gmsh.model.geo.synchronize()
     # メッシュオプション
@@ -40,15 +38,15 @@ def generate_bgm(filepath):
         a=gmsh.model.geo.addPlaneSurface([i])
         print("a=",a)
 
-    gmsh.model.geo.synchronize()  # これを使うことで、a(つまり[2,10]) が追加される
+    gmsh.model.geo.synchronize()  
     check = gmsh.model.getEntities(2)
     print(check)
     surfaceAll_id = [e[1] for e in check]
     print("surfaceAll_id=",surfaceAll_id)
     surfaceLoop=gmsh.model.geo.addSurfaceLoop(surfaceAll_id)
     gmsh.model.geo.addVolume([surfaceLoop])
-    gmsh.model.geo.synchronize()  ## ここにこれを入れないと、print(len(nodes))が、表面Nodeのときに出力したprint(len(nodes))と同じ値になってしまう。
-    gmsh.model.mesh.generate(3)  ###  しかし、generate(3)は、synchronize() しなくても、正常に処理される
+    gmsh.model.geo.synchronize()  
+    gmsh.model.mesh.generate(3) 
     nodeids, coords, _ = gmsh.model.mesh.getNodes()
 
     output_folder = "output"
@@ -85,18 +83,14 @@ def surfacemesh(filepath_stl):
     path = os.path.dirname(os.path.abspath(__file__))
     gmsh.merge(os.path.join(path, filepath_stl))
 
-    # forReparametrizationをTrueにしないとメッシングで時間がかかる
     gmsh.model.mesh.classifySurfaces(angle = 40 * np.pi / 180, boundary=True, forReparametrization=True)
-    # classifySurfacesとセットで用いる
     gmsh.model.mesh.createGeometry()
     gmsh.model.geo.synchronize()
 
     gmsh.option.setNumber("Mesh.OptimizeThreshold", 0.9)
-    # メッシュのアルゴリズムを設定
     gmsh.option.setNumber('Mesh.Algorithm', 1)
-    # 最適化を何回繰り返すか->なぜか品質わるくなる
     gmsh.option.setNumber("Mesh.Optimize", 10)
-    # path = os.path.dirname(os.path.abspath(__file__))
+
     gmsh.merge(os.path.join("output",'bgm.pos'))                    # TODO : OSの違いに対応できているか
     bg_field = gmsh.model.mesh.field.add("PostView")    
     gmsh.model.mesh.field.setNumber(bg_field, "ViewIndex", 0) 

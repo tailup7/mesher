@@ -1,6 +1,5 @@
 import mygmsh
 import node 
-import cell
 import myio
 import config
 import models
@@ -16,7 +15,7 @@ filepath_centerline = os.path.join("input", "centerline.txt")
 
 # backgroundmeshを作成, 管径をもとにスカラー値をセットしてbgm.posとして出力
 nodeids, coords ,filepath_stl_bgmsurface = mygmsh.generate_bgm(filepath_stl)
-nodes_centerline, node_centerline_dict = myio.read_txt_centerline(filepath_centerline) 
+nodes_centerline = myio.read_txt_centerline(filepath_centerline) 
 edgeradii = radius.calculate_edgeradius(nodes_centerline, filepath_stl_bgmsurface)
 nodes_any = node.coords_to_nodes(nodeids,coords)
 nodeany_dict={}                                          
@@ -38,48 +37,8 @@ for surfacenode in surfacenodes:
     surfacenode.set_edgeradius(edgeradii)
     surfacenode_dict[surfacenode.id] = surfacenode
 
-# 入力 surfacetriangles,
-# 一番内側の層を作る#################################################################################
-temp = set()
-mostinnersurfacenode_dict={}
-for surfacetriangle in surfacetriangles:
-    surfacetriangle.calc_unitnormal(node_centerline_dict)
-
-    nodes = [surfacetriangle.node0, surfacetriangle.node1, surfacetriangle.node2]
-    for onenode in nodes:
-        if onenode.id in temp:
-            mostinnersurfacenode_dict[onenode.id].x += surfacetriangle.unitnormal_in[0]*utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
-            mostinnersurfacenode_dict[onenode.id].y += surfacetriangle.unitnormal_in[1]*utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
-            mostinnersurfacenode_dict[onenode.id].z += surfacetriangle.unitnormal_in[2]*utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
-            mostinnersurfacenode_dict[onenode.id].sumcountor += 1
-        else:
-            x =  surfacetriangle.unitnormal_in[0]*utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
-            y =  surfacetriangle.unitnormal_in[1]*utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
-            z =  surfacetriangle.unitnormal_in[2]*utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
-            mostinnersurfacenode = node.NodeAny(onenode.id, x, y, z)
-            mostinnersurfacenode_dict[onenode.id] = mostinnersurfacenode
-            temp.add(onenode.id)
-
-mostinnersurfacenodes=[]
-for i in range(1, config.num_of_surfacenodes+1): 
-    mostinnersurfacenode_dict[i].x = surfacenode_dict[i].x + mostinnersurfacenode_dict[i].x/mostinnersurfacenode_dict[i].sumcountor
-    mostinnersurfacenode_dict[i].y = surfacenode_dict[i].y + mostinnersurfacenode_dict[i].y/mostinnersurfacenode_dict[i].sumcountor
-    mostinnersurfacenode_dict[i].z = surfacenode_dict[i].z + mostinnersurfacenode_dict[i].z/mostinnersurfacenode_dict[i].sumcountor
-    mostinnersurfacenodes.append(mostinnersurfacenode_dict[i])
-
-mostinnersurfacetriangles=[]
-for surfacetriangle in surfacetriangles:
-    node0 = mostinnersurfacenode_dict[surfacetriangle.node0.id]  # idは同じだが、座標だけ変わる
-    node1 = mostinnersurfacenode_dict[surfacetriangle.node1.id]
-    node2 = mostinnersurfacenode_dict[surfacetriangle.node2.id]
-    node0.find_closest_centerlinenode(nodes_centerline)
-    node1.find_closest_centerlinenode(nodes_centerline)
-    node2.find_closest_centerlinenode(nodes_centerline)
-    mostinnersurfacetriangle = cell.Triangle(surfacetriangle.id,node0,node1,node2)
-    mostinnersurfacetriangle.calc_unitnormal(node_centerline_dict)
-    mostinnersurfacetriangles.append(mostinnersurfacetriangle)
-####################################################################################
-#出力 mostinnersurfacetriangles, mostinnersurfacenodes
+# make mostinnersurface
+mostinnersurfacetriangles, mostinnersurfacenodes=boundarylayer.make_mostinnersurface(nodes_centerline,surfacenode_dict,surfacetriangles)
 
 # make tetramesh and add to msh file
 filepath_stl = myio.write_stl_mostinnersurface(mostinnersurfacetriangles)
@@ -114,14 +73,15 @@ for surfacetriangle in surfacetriangles:
     mesh.triangles_WALL.append(surfacetriangle)
     mesh.num_of_elements += 1
 
+# make 1~n th layer from outersurface and add to msh file
 for i in range (1,config.num_of_layers):
     mesh = boundarylayer.make_nthlayer_surfacenode(i, surfacenode_dict, surfacetriangles, mesh)
     mesh = boundarylayer.make_nthlayer_quad(i,nodes_centerline, nodes_on_inletboundaryedge, nodes_on_outletboundaryedge,mesh)
     mesh = boundarylayer.make_nthlayer_prism(i,surfacetriangles,mesh)
-
 mesh=boundarylayer.make_finallayer_quad(nodes_centerline,nodes_layersurface_dict,nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,mesh)
 mesh=boundarylayer.make_finallayer_prism(surfacetriangles,nodes_layersurface_dict,mesh)
 
+# write msh file
 myio.write_msh_allmesh(mesh)
 
 gmsh.initialize()

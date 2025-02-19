@@ -7,14 +7,14 @@ class Triangle:
         self.node1=node1
         self.node2=node2
 
-    def calc_unitnormal(self, node_centerline_dict):
+    def calc_unitnormal(self, nodes_centerline):
         vector0=np.array([self.node1.x-self.node0.x, self.node1.y-self.node0.y, self.node1.z-self.node0.z])
         vector1=np.array([self.node2.x-self.node0.x, self.node2.y-self.node0.y, self.node2.z-self.node0.z])
         normal = np.cross(vector0,vector1)
         n0 = np.array([self.node0.x,self.node0.y,self.node0.z])
-        nc = np.array([ node_centerline_dict[self.node0.closest_centerlinenode_id].x,
-                        node_centerline_dict[self.node0.closest_centerlinenode_id].y,
-                        node_centerline_dict[self.node0.closest_centerlinenode_id].z ])
+        nc = np.array([ nodes_centerline[self.node0.closest_centerlinenode_id].x,
+                        nodes_centerline[self.node0.closest_centerlinenode_id].y,
+                        nodes_centerline[self.node0.closest_centerlinenode_id].z ])
         vec_in = nc-n0
         if np.dot(vec_in,normal)<0:
             self.unitnormal_out = normal/np.linalg.norm(normal)

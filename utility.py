@@ -42,7 +42,6 @@ def calculate_centroid(points):
     z=z_sum/len(points)
     return np.array([x,y,z])
 
-
 # kdtree
 # 返り値は 
 #  list[tuple[instance_A, instance_B, distance(float)]]

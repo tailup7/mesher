@@ -5,6 +5,45 @@ import cell
 import numpy as np
 import config
 
+def make_mostinnersurface(nodes_centerline,surfacenode_dict,surfacetriangles):
+    temp = set()
+    mostinnersurfacenode_dict={}
+    for surfacetriangle in surfacetriangles:
+        surfacetriangle.calc_unitnormal(nodes_centerline)
+        nodes = [surfacetriangle.node0, surfacetriangle.node1, surfacetriangle.node2]
+        for onenode in nodes:
+            scalingfactor=utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
+            if onenode.id in temp:
+                mostinnersurfacenode_dict[onenode.id].x += scalingfactor*surfacetriangle.unitnormal_in[0]
+                mostinnersurfacenode_dict[onenode.id].y += scalingfactor*surfacetriangle.unitnormal_in[1]
+                mostinnersurfacenode_dict[onenode.id].z += scalingfactor*surfacetriangle.unitnormal_in[2]
+                mostinnersurfacenode_dict[onenode.id].sumcountor += 1
+            else:
+                x =  scalingfactor*surfacetriangle.unitnormal_in[0]
+                y =  scalingfactor*surfacetriangle.unitnormal_in[1]
+                z =  scalingfactor*surfacetriangle.unitnormal_in[2]
+                mostinnersurfacenode = node.NodeAny(onenode.id, x, y, z)
+                mostinnersurfacenode_dict[onenode.id] = mostinnersurfacenode
+                temp.add(onenode.id)
+    mostinnersurfacenodes=[]
+    for i in range(1, config.num_of_surfacenodes+1): 
+        mostinnersurfacenode_dict[i].x = surfacenode_dict[i].x + mostinnersurfacenode_dict[i].x/mostinnersurfacenode_dict[i].sumcountor
+        mostinnersurfacenode_dict[i].y = surfacenode_dict[i].y + mostinnersurfacenode_dict[i].y/mostinnersurfacenode_dict[i].sumcountor
+        mostinnersurfacenode_dict[i].z = surfacenode_dict[i].z + mostinnersurfacenode_dict[i].z/mostinnersurfacenode_dict[i].sumcountor
+        mostinnersurfacenodes.append(mostinnersurfacenode_dict[i])
+    mostinnersurfacetriangles=[]
+    for surfacetriangle in surfacetriangles:
+        node0 = mostinnersurfacenode_dict[surfacetriangle.node0.id]  # idは同じだが、座標だけ変わる
+        node1 = mostinnersurfacenode_dict[surfacetriangle.node1.id]
+        node2 = mostinnersurfacenode_dict[surfacetriangle.node2.id]
+        node0.find_closest_centerlinenode(nodes_centerline)
+        node1.find_closest_centerlinenode(nodes_centerline)
+        node2.find_closest_centerlinenode(nodes_centerline)
+        mostinnersurfacetriangle = cell.Triangle(surfacetriangle.id,node0,node1,node2)
+        mostinnersurfacetriangle.calc_unitnormal(nodes_centerline)
+        mostinnersurfacetriangles.append(mostinnersurfacetriangle)
+    return mostinnersurfacetriangles, mostinnersurfacenodes
+
 def make_nthlayer_surfacenode(n, surfacenode_dict, surfacetriangles, mesh):
     temp = set()
     nth_layer_surfacenode_dict={}
@@ -13,19 +52,20 @@ def make_nthlayer_surfacenode(n, surfacenode_dict, surfacetriangles, mesh):
     for surfacetriangle in surfacetriangles:
         nodes = [surfacetriangle.node0, surfacetriangle.node1, surfacetriangle.node2]
         for onenode in nodes:
+            scalingfactor = utility.calculate_nth_layer_thickratio(n)*onenode.scalar_forlayer
             if first_id > onenode.id:
                 first_id = onenode.id
             if last_id < onenode.id:
                 last_id = onenode.id
             if onenode.id in temp:
-                nth_layer_surfacenode_dict[onenode.id].x += surfacetriangle.unitnormal_in[0]*utility.calculate_nth_layer_thickratio(n)*onenode.scalar_forlayer
-                nth_layer_surfacenode_dict[onenode.id].y += surfacetriangle.unitnormal_in[1]*utility.calculate_nth_layer_thickratio(n)*onenode.scalar_forlayer
-                nth_layer_surfacenode_dict[onenode.id].z += surfacetriangle.unitnormal_in[2]*utility.calculate_nth_layer_thickratio(n)*onenode.scalar_forlayer
+                nth_layer_surfacenode_dict[onenode.id].x += scalingfactor*surfacetriangle.unitnormal_in[0]
+                nth_layer_surfacenode_dict[onenode.id].y += scalingfactor*surfacetriangle.unitnormal_in[1]
+                nth_layer_surfacenode_dict[onenode.id].z += scalingfactor*surfacetriangle.unitnormal_in[2]
                 nth_layer_surfacenode_dict[onenode.id].sumcountor += 1
             else:
-                x =  surfacetriangle.unitnormal_in[0]*utility.calculate_nth_layer_thickratio(n)*onenode.scalar_forlayer
-                y =  surfacetriangle.unitnormal_in[1]*utility.calculate_nth_layer_thickratio(n)*onenode.scalar_forlayer
-                z =  surfacetriangle.unitnormal_in[2]*utility.calculate_nth_layer_thickratio(n)*onenode.scalar_forlayer
+                x =  scalingfactor*surfacetriangle.unitnormal_in[0]
+                y =  scalingfactor*surfacetriangle.unitnormal_in[1]
+                z =  scalingfactor*surfacetriangle.unitnormal_in[2]
                 nth_layer_surfacenode = node.NodeAny(onenode.id + config.num_of_surfacenodes*n, x, y, z)
                 nth_layer_surfacenode_dict[onenode.id] = nth_layer_surfacenode
                 temp.add(onenode.id)
@@ -35,8 +75,7 @@ def make_nthlayer_surfacenode(n, surfacenode_dict, surfacetriangles, mesh):
         nth_layer_surfacenode_dict[i].z = surfacenode_dict[i].z + nth_layer_surfacenode_dict[i].z/nth_layer_surfacenode_dict[i].sumcountor
         mesh.nodes.append(nth_layer_surfacenode_dict[i])
         mesh.num_of_nodes += 1
-
-    return mesh  
+    return mesh
 
 def make_nthlayer_quad(n,nodes_centerline, nodes_on_inletboundaryedge, nodes_on_outletboundaryedge,mesh):
     innerpoint_vec = np.array([nodes_centerline[5].x,nodes_centerline[5].y,nodes_centerline[5].z])

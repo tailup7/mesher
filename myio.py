@@ -3,7 +3,6 @@ import cell
 import config
 import sys
 import os
-import numpy as np
 
 def read_txt_centerline(filepath):
     if not os.path.isfile(filepath):
@@ -13,7 +12,6 @@ def read_txt_centerline(filepath):
         lines = file.readlines()
     valid_lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
     nodes_centerline = []
-    node_centerline_dict={}
     index = 0
     sum_x=0
     sum_y=0
@@ -27,17 +25,14 @@ def read_txt_centerline(filepath):
             sum_y+=y
             sum_z+=z 
             node_centerline = node.NodeCenterline(index, x, y, z)
-            node_centerline_dict[index] = node_centerline
             nodes_centerline.append(node_centerline)
             if index == 0:
-                inlet_point = node_centerline
-                config.inlet_point=inlet_point
+                config.inlet_point = node_centerline
             elif index == len(valid_lines)-1:
-                outlet_point = node_centerline
-                config.outlet_point=outlet_point
+                config.outlet_point = node_centerline
             index += 1
-    config.num_of_centerlinenodes=index
-    return nodes_centerline, node_centerline_dict
+    config.num_of_centerlinenodes = index
+    return nodes_centerline
 
 def write_txt_edgeradii(edgeradii):
     os.makedirs("output",exist_ok = True)
@@ -221,18 +216,17 @@ def read_msh_innermesh(filepath,mesh):
                     nodes_innerwall.append(node0)
                     nodes_innerwall.append(node1)
                     nodes_innerwall.append(node2)
-                    triangle_innerwall = cell.Triangle(elem_id, node0, node1, node2)
                     nodesid_composing_innerwalltriangle.update(map(int, parts[-3:]))
 
                 elif physical_group == 20:
                     triangle_inlet = cell.Triangle(elem_id, node0, node1, node2)
-                    nodesid_composing_inlettriangle.update(map(int, parts[-3:])) ##########
+                    nodesid_composing_inlettriangle.update(map(int, parts[-3:])) 
                     mesh.triangles_INLET.append(triangle_inlet)
                     mesh.num_of_elements += 1
 
                 elif physical_group == 30:
                     triangle_outlet = cell.Triangle(elem_id, node0, node1, node2)
-                    nodesid_composing_outlettriangle.update(map(int, parts[-3:])) #########
+                    nodesid_composing_outlettriangle.update(map(int, parts[-3:]))
                     mesh.triangles_OUTLET.append(triangle_outlet)
                     mesh.num_of_elements += 1
             if  elem_type == 4: 
@@ -271,7 +265,6 @@ def write_msh_allmesh(mesh):
         f.write("2 30 \"OUTLET\"\n")
         f.write("3 100 \"INTERNAL\"\n")
         f.write("$EndPhysicalNames\n")
-
         # $Nodes 
         f.write("$Nodes\n")
         f.write(f"{mesh.num_of_nodes}\n")  
@@ -279,7 +272,6 @@ def write_msh_allmesh(mesh):
         for node in nodes_sorted:
                 f.write(f"{node.id} {node.x} {node.y} {node.z}\n")
         f.write("$EndNodes\n")
-
         # elements
         f.write("$Elements\n")
         f.write(f"{mesh.num_of_elements}\n")
@@ -297,16 +289,14 @@ def write_msh_allmesh(mesh):
         for quad in mesh.quadrangles_INLET:
             elements_countor+=1
             f.write(f"{elements_countor} 3 2 20 1 {quad.id0} {quad.id1} {quad.id2} {quad.id3}\n")
-
         for quad in mesh.quadrangles_OUTLET:
             elements_countor+=1
             f.write(f"{elements_countor} 3 2 30 1 {quad.id0} {quad.id1} {quad.id2} {quad.id3}\n")
-
         for tetra in mesh.tetras_INTERNAL:
             elements_countor+=1
             f.write(f"{elements_countor} 4 2 100 1 {tetra.id0} {tetra.id1} {tetra.id2} {tetra.id3}\n")
-
         for prism in mesh.prisms_INTERNAL:
             elements_countor+=1
             f.write(f"{elements_countor} 6 2 100 1 {prism.id0} {prism.id1} {prism.id2} {prism.id3} {prism.id4} {prism.id5}\n")
+            
         f.write("$EndElements\n")
