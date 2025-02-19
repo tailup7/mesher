@@ -19,7 +19,9 @@
 <p align="left">
   <img src="https://github.com/tailup7/mesher/blob/main/picture/inf.png" alt="meshing" width="600"/>
 </p>
-You need centerline point cloud (“centerline.txt”) and the surface of the tube shape (“WALL.stl”) in the “input” folder as input data. As figure shows, centerline point cloud must reach near the end face of the tube shape (The fineness of the centerline point cloud is not important). In addition, the end faces of the tube shape must be open. Shapes with bifurcations cannot be meshed >_<.
+You need centerline point cloud (“centerline.txt”) and the surface of the tube shape (“WALL.stl”) in the “input” folder as input data (The first point listed in centerline.txt will be the inflow side). <br>
+As figure shows, centerline point cloud must reach near the end face of the tube (The fineness of the centerline point cloud is not important). In addition, the end faces of the tube must be open. <br>
+Shapes with bifurcations cannot be meshed >_<.
 
 ### CFD result with OpenFOAM
 <p align="left">
