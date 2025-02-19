@@ -36,7 +36,7 @@ def make_nthlayer_surfacenode(n, surfacenode_dict, surfacetriangles, mesh):
         mesh.nodes.append(nth_layer_surfacenode_dict[i])
         mesh.num_of_nodes += 1
 
-    return mesh  # 返す値はこれだけか?
+    return mesh  
 
 def make_nthlayer_quad(n,nodes_centerline, nodes_on_inletboundaryedge, nodes_on_outletboundaryedge,mesh):
     innerpoint_vec = np.array([nodes_centerline[5].x,nodes_centerline[5].y,nodes_centerline[5].z])

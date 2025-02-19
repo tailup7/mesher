@@ -1,9 +1,4 @@
 from dataclasses import dataclass,field
-import config
-import node
-import cell
-import utility
-import numpy as np
 
 @dataclass
 class Mesh:

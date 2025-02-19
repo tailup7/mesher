@@ -7,8 +7,6 @@ first_layer_ratio = 0.015 # % of diameter
 growth_rate = 1.2
 num_of_layers = 5
 
-boundarylayer_ratio = 0.15
-
 inlet_point=None  # myio.read_txt_centerline
 outlet_point=None
 inlet_radius=None 

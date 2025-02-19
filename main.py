@@ -122,9 +122,6 @@ for i in range (1,config.num_of_layers):
 mesh=boundarylayer.make_finallayer_quad(nodes_centerline,nodes_layersurface_dict,nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,mesh)
 mesh=boundarylayer.make_finallayer_prism(surfacetriangles,nodes_layersurface_dict,mesh)
 
-
-#models.make_nth_layer(nodes_centerline,surfacetriangles,surfacenode_dict,nodes_on_inletboundaryedge,nodes_on_outletboundaryedge,nodes_layersurface_dict,0.012,mesh)
-
 myio.write_msh_allmesh(mesh)
 
 gmsh.initialize()
