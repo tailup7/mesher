@@ -75,11 +75,11 @@ def find_right_neighbors(points,innerpoint_vec):
         min_distance=float("inf")
 
 def calculate_nth_layer_thickratio(n):
-    thickratio_each_layer=[None]*config.num_of_layers
-    thickratio_each_layer[0]=config.first_layer_ratio
+    thickratio_each_layer=[None]*config.NUM_OF_LAYERS
+    thickratio_each_layer[0]=config.FIRST_LAYER_RATIO
     total_thickratio = 0
     for i in range(1,n):
-        thickratio_each_layer[i] = thickratio_each_layer[i-1]*config.growth_rate
+        thickratio_each_layer[i] = thickratio_each_layer[i-1]*config.GROWTH_RATE
     for i in range(n):
         total_thickratio += thickratio_each_layer[i]
     return total_thickratio

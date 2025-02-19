@@ -76,7 +76,7 @@ class NodeAny:
                 self.edgeradius=(edgeradii[-1]+edgeradii[-2])/2
             else:
                 self.edgeradius=(edgeradii[self.closest_centerlinenode_id]+edgeradii[self.closest_centerlinenode_id+1])/2
-        self.scalar_forbgm = self.edgeradius*config.scaling_factor
+        self.scalar_forbgm = self.edgeradius*config.SCALING_FACTOR
         self.scalar_forlayer = self.edgeradius*2
 
 # gmsh.model.mesh.getNodes() の1つめの返り値は、得られた全Nodeのid のリスト。

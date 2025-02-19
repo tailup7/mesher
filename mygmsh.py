@@ -10,7 +10,6 @@ def generate_bgm(filepath):
     path = os.path.dirname(os.path.abspath(__file__))
     gmsh.merge(os.path.join(path, filepath))  
     
-
     gmsh.model.mesh.classifySurfaces(angle = 40 * np.pi / 180, boundary=True, forReparametrization=True)
     gmsh.model.mesh.createGeometry()
     gmsh.model.geo.synchronize()
@@ -18,8 +17,8 @@ def generate_bgm(filepath):
     gmsh.option.setNumber("Mesh.OptimizeNetgen", 1)
     gmsh.option.setNumber("Mesh.OptimizeThreshold", 0.9)
     gmsh.option.setNumber('Mesh.Algorithm', 1)
-    gmsh.option.setNumber("Mesh.MeshSizeMin", config.meshsize)
-    gmsh.option.setNumber("Mesh.MeshSizeMax", config.meshsize)
+    gmsh.option.setNumber("Mesh.MeshSizeMin", config.MESHSIZE)
+    gmsh.option.setNumber("Mesh.MeshSizeMax", config.MESHSIZE)
     wall = gmsh.model.getEntities(2)
     gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
     wall_id = [e[1] for e in wall]
@@ -68,8 +67,8 @@ def generate_bgm(filepath):
     gmsh.option.setNumber("Mesh.OptimizeNetgen", 1)
     gmsh.option.setNumber("Mesh.OptimizeThreshold", 0.9)
     gmsh.option.setNumber('Mesh.Algorithm', 1)
-    gmsh.option.setNumber("Mesh.MeshSizeMin", config.meshsize*0.5)
-    gmsh.option.setNumber("Mesh.MeshSizeMax", config.meshsize*0.5)
+    gmsh.option.setNumber("Mesh.MeshSizeMin", config.MESHSIZE*0.5)
+    gmsh.option.setNumber("Mesh.MeshSizeMax", config.MESHSIZE*0.5)
     gmsh.model.mesh.generate(2)
     stl_file = os.path.join(output_folder, "for_calculate_radius.stl")
     gmsh.write(stl_file)
@@ -91,7 +90,7 @@ def surfacemesh(filepath_stl):
     gmsh.option.setNumber('Mesh.Algorithm', 1)
     gmsh.option.setNumber("Mesh.Optimize", 10)
 
-    gmsh.merge(os.path.join("output",'bgm.pos'))                    # TODO : OSの違いに対応できているか
+    gmsh.merge(os.path.join("output",'bgm.pos'))             
     bg_field = gmsh.model.mesh.field.add("PostView")    
     gmsh.model.mesh.field.setNumber(bg_field, "ViewIndex", 0) 
     gmsh.model.mesh.field.setAsBackgroundMesh(bg_field) 
@@ -151,7 +150,7 @@ def make_innermesh(filepath_stl):
     gmsh.option.setNumber("Mesh.OptimizeThreshold", 0.9)
     gmsh.option.setNumber('Mesh.Algorithm', 1)
     gmsh.option.setNumber("Mesh.Optimize", 10)
-    gmsh.merge(os.path.join("output",'bgm.pos'))                    # TODO : OSの違いに対応できているか
+    gmsh.merge(os.path.join("output",'bgm.pos'))              
     bg_field = gmsh.model.mesh.field.add("PostView")    
     gmsh.model.mesh.field.setNumber(bg_field, "ViewIndex", 0) 
     gmsh.model.mesh.field.setAsBackgroundMesh(bg_field) 

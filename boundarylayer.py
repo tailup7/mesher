@@ -12,7 +12,7 @@ def make_mostinnersurface(nodes_centerline,surfacenode_dict,surfacetriangles):
         surfacetriangle.calc_unitnormal(nodes_centerline)
         nodes = [surfacetriangle.node0, surfacetriangle.node1, surfacetriangle.node2]
         for onenode in nodes:
-            scalingfactor=utility.calculate_nth_layer_thickratio(config.num_of_layers)*onenode.scalar_forlayer
+            scalingfactor=utility.calculate_nth_layer_thickratio(config.NUM_OF_LAYERS)*onenode.scalar_forlayer
             if onenode.id in temp:
                 mostinnersurfacenode_dict[onenode.id].x += scalingfactor*surfacetriangle.unitnormal_in[0]
                 mostinnersurfacenode_dict[onenode.id].y += scalingfactor*surfacetriangle.unitnormal_in[1]
@@ -117,8 +117,8 @@ def make_finallayer_quad(nodes_centerline,nodes_layersurface_dict,nodes_on_inlet
     innerpoint_vec = np.array([nodes_centerline[5].x,nodes_centerline[5].y,nodes_centerline[5].z])
     utility.find_right_neighbors(nodes_on_inletboundaryedge, innerpoint_vec)
     for node_on_inletboundaryedge in nodes_on_inletboundaryedge:
-        quad_id0=node_on_inletboundaryedge.id+ config.num_of_surfacenodes*(config.num_of_layers-1)
-        quad_id1=node_on_inletboundaryedge.right_node_id+ config.num_of_surfacenodes*(config.num_of_layers-1)
+        quad_id0=node_on_inletboundaryedge.id+ config.num_of_surfacenodes*(config.NUM_OF_LAYERS-1)
+        quad_id1=node_on_inletboundaryedge.right_node_id+ config.num_of_surfacenodes*(config.NUM_OF_LAYERS-1)
         quad_id2=nodes_layersurface_dict[node_on_inletboundaryedge.right_node_id-config.num_of_innermeshnodes]
         quad_id3=nodes_layersurface_dict[node_on_inletboundaryedge.id-config.num_of_innermeshnodes]
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
@@ -127,8 +127,8 @@ def make_finallayer_quad(nodes_centerline,nodes_layersurface_dict,nodes_on_inlet
     innerpoint_vec = np.array([nodes_centerline[-5].x,nodes_centerline[-5].y,nodes_centerline[-5].z])
     utility.find_right_neighbors(nodes_on_outletboundaryedge, innerpoint_vec)
     for node_on_outletboundaryedge in nodes_on_outletboundaryedge:
-        quad_id0=node_on_outletboundaryedge.id+ config.num_of_surfacenodes*(config.num_of_layers-1)
-        quad_id1=node_on_outletboundaryedge.right_node_id+ config.num_of_surfacenodes*(config.num_of_layers-1)
+        quad_id0=node_on_outletboundaryedge.id+ config.num_of_surfacenodes*(config.NUM_OF_LAYERS-1)
+        quad_id1=node_on_outletboundaryedge.right_node_id+ config.num_of_surfacenodes*(config.NUM_OF_LAYERS-1)
         quad_id2=nodes_layersurface_dict[node_on_outletboundaryedge.right_node_id-config.num_of_innermeshnodes]
         quad_id3=nodes_layersurface_dict[node_on_outletboundaryedge.id-config.num_of_innermeshnodes]
         quad = cell.Quad(quad_id0,quad_id1,quad_id2,quad_id3)
@@ -141,9 +141,9 @@ def make_finallayer_prism(surfacetriangles,nodes_layersurface_dict,mesh):
         prism_id0=nodes_layersurface_dict[surfacetriangle.node0.id-config.num_of_innermeshnodes]
         prism_id1=nodes_layersurface_dict[surfacetriangle.node1.id-config.num_of_innermeshnodes]
         prism_id2=nodes_layersurface_dict[surfacetriangle.node2.id-config.num_of_innermeshnodes]
-        prism_id3=surfacetriangle.node0.id+ config.num_of_surfacenodes*(config.num_of_layers-1)
-        prism_id4=surfacetriangle.node1.id+ config.num_of_surfacenodes*(config.num_of_layers-1)
-        prism_id5=surfacetriangle.node2.id+ config.num_of_surfacenodes*(config.num_of_layers-1)
+        prism_id3=surfacetriangle.node0.id+ config.num_of_surfacenodes*(config.NUM_OF_LAYERS-1)
+        prism_id4=surfacetriangle.node1.id+ config.num_of_surfacenodes*(config.NUM_OF_LAYERS-1)
+        prism_id5=surfacetriangle.node2.id+ config.num_of_surfacenodes*(config.NUM_OF_LAYERS-1)
         n5_layer_prism = cell.Prism(prism_id0,prism_id1,prism_id2,prism_id3,prism_id4,prism_id5)
         mesh.prisms_INTERNAL.append(n5_layer_prism)
         mesh.num_of_elements+=1

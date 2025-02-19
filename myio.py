@@ -4,6 +4,31 @@ import config
 import sys
 import os
 
+def parse_value(value):
+    try:
+        if "." in value:
+            return float(value)  
+        return int(value)  
+    except ValueError:
+        return value 
+
+def read_txt_parameter(filepath):
+    param_dict = {}
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"can't find : {filepath}")
+    with open(filepath, "r", encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+            if not line or line.startswith("#"): 
+                continue
+            key, value = line.split("=", 1) 
+            param_dict[key.strip()] = parse_value(value.strip())
+    config.MESHSIZE = param_dict["MESHSIZE"]
+    config.SCALING_FACTOR = param_dict["SCALING_FACTOR"]
+    config.FIRST_LAYER_RATIO = param_dict["FIRST_LAYER_RATIO"]
+    config.GROWTH_RATE = param_dict["GROWTH_RATE"]
+    config.NUM_OF_LAYERS = param_dict["NUM_OF_LAYERS"]
+
 def read_txt_centerline(filepath):
     if not os.path.isfile(filepath):
             print(f"Error: '{filepath}' does not exist.")
@@ -298,5 +323,5 @@ def write_msh_allmesh(mesh):
         for prism in mesh.prisms_INTERNAL:
             elements_countor+=1
             f.write(f"{elements_countor} 6 2 100 1 {prism.id0} {prism.id1} {prism.id2} {prism.id3} {prism.id4} {prism.id5}\n")
-            
+
         f.write("$EndElements\n")
