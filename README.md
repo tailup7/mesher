@@ -10,10 +10,11 @@
 
 ## Usage
 + ローカルに上のファイルを全てコピーする
-  + (gmsh本体をインストールすると、GUIで出力ファイルが確認できるので、おすすめします)
-+ 「input」フォルダに「WALL.stl」と「centerline.txt」を用意する (WALL.stlは、端面が開いているチューブ形状のSTL, centerline.txtはその中心線点群)
++ 「input」フォルダに「WALL.stl」と「centerline.txt」を用意する 
 + 「python main.py」 で実行 (必要なライブラリが無い場合はインストールする。 ex.「pip install gmsh」) 
 + 「output」フォルダに色々出力される。流体解析するデータは「allmesh.msh」
+  + (gmsh本体をインストールすると、GUIで出力ファイルが確認できるので、おすすめします)
+  + (gmsh本体のインストールが面倒な人は、「main.py」の下から2行目「gmsh.fltk.run()」(GUIを起動して結果を表示するコマンド) を消せば動くと思います。その場合はparaviewなどで「allmesh.vtk」を開いてメッシュを確認してください)
 
 ## input data
 <p align="left">
