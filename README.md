@@ -1,4 +1,4 @@
-# Auto Meshing with Optinal Mesh Size
+# Auto Meshing with Optimal Mesh Size
 <p align="center">
   <img src="https://github.com/tailup7/mesher/blob/main/picture/0.png" alt="meshing" width="1000"/>
 </p>
