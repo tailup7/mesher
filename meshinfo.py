@@ -12,3 +12,4 @@ class Mesh:
     quadrangles_OUTLET:list = field(default_factory=list)
     tetras_INTERNAL:list = field(default_factory=list)
     prisms_INTERNAL:list = field(default_factory=list)
+    prisms_rearray_INTERNAL:list[list] = field(default_factory=list)

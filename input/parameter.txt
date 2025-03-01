@@ -1,8 +1,0 @@
-# parameter for background mesh
-MESHSIZE = 0.5 
-SCALING_FACTOR = 0.2
-
-# parameter for boundarylayer
-FIRST_LAYER_RATIO = 0.015 
-GROWTH_RATE = 1.2
-NUM_OF_LAYERS = 5

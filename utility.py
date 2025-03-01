@@ -29,6 +29,15 @@ def calculate_PH_length(P,A,B):
     vector_PH = vector_AH - vector_AP
     return(np.linalg.norm(vector_PH))
 
+def calculate_H(P,A,B):
+    vector_AP = np.array([P.x-A.x,  P.y-A.y,  P.z-A.z])
+    vector_AB = np.array([B.x-A.x,  B.y-A.y,  B.z-A.z])
+    vector_AB_square = np.dot(vector_AB, vector_AB)
+    t = np.dot(vector_AP,vector_AB) / vector_AB_square
+    vector_AH = t*vector_AB
+    vector_H = np.array([A.x,A.y,A.z]) + vector_AH
+    return vector_H
+
 def calculate_centroid(points):
     x_sum=0
     y_sum=0
@@ -83,3 +92,8 @@ def calculate_nth_layer_thickratio(n):
     for i in range(n):
         total_thickratio += thickratio_each_layer[i]
     return total_thickratio
+
+def rearray_prismcell(mesh):
+    for i in range(len(mesh.prisms_INTERNAL)):
+        mesh.prisms_rearray_INTERNAL[i%config.num_of_surfacenodes].append(mesh.prisms_INTERNAL[i])
+    return mesh

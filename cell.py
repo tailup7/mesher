@@ -27,7 +27,23 @@ class Triangle:
         x = (self.node0.x + self.node1.x + self.node2.x)/3
         y = (self.node0.y + self.node1.y + self.node2.y)/3
         z = (self.node0.z + self.node1.z + self.node2.z)/3
-        self.centroid=[x,y,z]
+        self.centroid=np.array([x,y,z])
+
+    def find_closest_centerlinenode(self,nodes_centerline):
+        min_distance = float("inf")
+        for i in range(len(nodes_centerline)):
+            centerlinenode_vec=np.array([nodes_centerline[i].x, nodes_centerline[i].y, nodes_centerline[i].z])
+            distance_temp=np.linalg.norm(self.centroid - centerlinenode_vec)
+            if distance_temp < min_distance:
+                self.correspond_centerlinenode = nodes_centerline[i]
+                min_distance = distance_temp
+
+    def assign_correspondcenterlinenode_to_surfacenode(self):
+        self.node0.correspond_centerlinenodes.append(self.correspond_centerlinenode)
+        self.node1.correspond_centerlinenodes.append(self.correspond_centerlinenode)
+        self.node2.correspond_centerlinenodes.append(self.correspond_centerlinenode)
+
+    
 
 class Quad:
     def __init__(self,id0,id1,id2,id3):
