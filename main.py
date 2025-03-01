@@ -238,9 +238,16 @@ def button2_deformmesh():
         thread.start()
 
 def description():
+    print("-- Explanation of buttons --")
     print("Make Mesh   : Please input two files. 1.centerline (.txt) 2.tubesurface (.stl)")
     print("Deform Mesh : If Make Mesh is already executed, you need...")
     print("              1. target_centerline (.txt) 2. target_radius (.txt)")
+    print()
+    print("-- Explanation of meshing parameters --")
+    print("MESH SIZE and SCALING_FACTOR : Parameters for making background mesh. (Don't have to care.)" )
+    print("FIRST_LAYER_RATIO            : thickness of most outer prism layer. percentage of local diameter." )
+    print("GROWTH_RATE                  : thickness of each prism layer grow according to this percentage parameter." )
+    print("NUM_OF_LAYERS                : number of prism layers." )
 
 def gmsh_finalize():
     gmsh.finalize()
