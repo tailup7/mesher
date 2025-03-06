@@ -4,23 +4,32 @@
 </p>
 
 ## Overview
-チューブ形状のSTLを読み込み、テトラプリズム複合メッシュを作成するコード。流体解析ができるファイルが出力される。本来なら領域分けが必要な、管径が小さくなるor大きくなる部分があっても、自動でメッシュサイズを調整する。
-メッシュサイズ制御には、gmshのバックグラウンドメッシュ機能を利用している( https://gmsh.info/doc/texinfo/gmsh.html#t7 )。<br>
-出力される解析モデルは、VMDで変形させることができる。
+Code that reads in tuce shape and creates a tetra-prism composite mesh. Output file can be used for CFD.  
+The mesh size is automatically adjusted even if there are areas where the tube diameter is extraordinary smaller or larger, which would normally require regionalization. <br>
+The background mesh function of gmsh is used to control the mesh size ( https://gmsh.info/doc/texinfo/gmsh.html#t7 ). <br>
+The output mesh file can be deformed as shown below.
 
 ## Usage
 + Copy all the above files to your local environment.
-+ Prepare centerline point cloud  
-+ 「python main.py」 で実行 (必要なライブラリが無い場合はインストールする。 ex.「pip install gmsh」) 
-+ 「output」フォルダに色々出力される。流体解析するデータは「allmesh.msh」
-  + (gmsh本体をインストールすると、GUIで出力ファイルが確認できるので、おすすめします)
-  + (gmsh本体のインストールが面倒な人は、「main.py」の下から2行目「gmsh.fltk.run()」(GUIを起動して結果を表示するコマンド) を消せば動くと思います。その場合はparaviewなどで「allmesh.vtk」を開いてメッシュを確認してください)
++ Change directory containing the copied files. 
++ Make python venv and install requirements.txt (https://qiita.com/shun_sakamoto/items/7944d0ac4d30edf91fde).
+<p align="left">
+  <img src="https://github.com/tailup7/mesher/blob/main/picture/gui.png" alt="meshing" width="500"/>
+</p>
+
+
++ ``` python main.py ```
++ 「0」: If need, change meshing parameter.
++ 「1」: Select centerline data and tube surface data.
++ 「2」: Excute meshing. Mesh file "allmesh.vtk", "allmesh.msh" will be output in output folder.
+  + I recommend installing Gmsh itself. With it, you can open (*.msh) files in the viewer.
+  + (If you don't have gmsh, please view the allmesh.vtk file with paraview.)
 
 ## input data
 <p align="left">
   <img src="https://github.com/tailup7/mesher/blob/main/picture/inf.png" alt="meshing" width="600"/>
 </p>
-You need centerline point cloud (“centerline.txt”) and the surface of the tube shape (“WALL.stl”) in the “input” folder as input data (The first point listed in centerline.txt will be the inflow side). <br>
+You need centerline point cloud (*.csv) and the surface of the tube shape (*.stl).  (The first point listed in centerline.csv will be the inflow side). <br>
 As figure shows, centerline point cloud must reach near the end face of the tube (The fineness of the centerline point cloud is not important). In addition, the end faces of the tube must be open. <br>
 Shapes with bifurcations cannot be meshed >_<.
 
