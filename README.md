@@ -39,4 +39,8 @@ Shapes with bifurcations cannot be meshed >_<.
 </p>
 
 # Deform Mesh 
-You can also deform mesh.
+You can also deform mesh and do fluid analysis.
+
+<p align="left">
+  <img src="https://github.com/tailup7/mesher/blob/main/picture/deform.png" alt="meshing" width="800"/>
+</p>
