@@ -9,8 +9,8 @@
 出力される解析モデルは、VMDで変形させることができる。
 
 ## Usage
-+ ローカルに上のファイルを全てコピーする
-+ 「input」フォルダに「WALL.stl」と「centerline.txt」を用意する 
++ Copy all the above files to your local environment.
++ Prepare centerline point cloud  
 + 「python main.py」 で実行 (必要なライブラリが無い場合はインストールする。 ex.「pip install gmsh」) 
 + 「output」フォルダに色々出力される。流体解析するデータは「allmesh.msh」
   + (gmsh本体をインストールすると、GUIで出力ファイルが確認できるので、おすすめします)
@@ -29,3 +29,5 @@ Shapes with bifurcations cannot be meshed >_<.
   <img src="https://github.com/tailup7/mesher/blob/main/picture/00.png" alt="meshing" width="600"/>
 </p>
 
+# Deform Mesh 
+You can also deform mesh.
