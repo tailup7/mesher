@@ -92,8 +92,3 @@ def calculate_nth_layer_thickratio(n):
     for i in range(n):
         total_thickratio += thickratio_each_layer[i]
     return total_thickratio
-
-def rearray_prismcell(mesh):
-    for i in range(len(mesh.prisms_INTERNAL)):
-        mesh.prisms_rearray_INTERNAL[i%config.num_of_surfacenodes].append(mesh.prisms_INTERNAL[i])
-    return mesh

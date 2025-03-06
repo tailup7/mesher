@@ -1,16 +1,15 @@
+from dataclasses import dataclass,field
 import tkinter as tk
 from tkinter import filedialog
 import sys
 import threading
+import os
 import time
 import func
 import myio
 import config
 import meshinfo
 import gmsh
-import os
-import time
-from dataclasses import dataclass,field
 
 class RedirectedOutput:
     """標準出力を `tkinter.Text` にリダイレクトするクラス"""
@@ -126,7 +125,8 @@ def update_config():
                 setattr(config, param, int(value))
         except ValueError:
             print(f"⚠ {param} の入力が無効です。数値を入力してください。")
-    print("パラメータが更新されました:", {param: getattr(config, param) for param in default_parameters})
+    print("Parameters are updated. :")
+    print({param: getattr(config, param) for param in default_parameters})
 
 def select_files():
     files = filedialog.askopenfilenames(title="select input file",filetypes=[("All files","*.*"), ("STL files","*.stl"), ("Text files","*.txt")])
@@ -141,27 +141,28 @@ def button1_makemesh():
         print("エラー: 中心線(*.txt)、表面(*.stl)の順に入力してください！")
         return
     def worker():
+        print("--------  Make Mesh  --------")
         start_time=time.perf_counter() 
 
         mesh = meshinfo.Mesh() 
 
         filepath_centerline = input_files[0]
         filepath_stl = input_files[1]
-        print(input_files[0])
-        print(input_files[1])
+        print("filepath of input centerline  :",input_files[0])
+        print("filepath of input stl         :",input_files[1])
 
         update_config()
 
-        nodes_centerline = myio.read_txt_centerline(filepath_centerline) 
-        edgeradii=func.calc_edgeradii(filepath_stl,nodes_centerline)
+        nodes_centerline = myio.read_csv_original(filepath_centerline)
+        radius_list = func.calc_radius(filepath_stl,nodes_centerline)
         root.after(0, gmsh_finalize)  
 
         root.after(0, gmsh_initialize)
-        func.generate_pos_bgm(filepath_stl,nodes_centerline,edgeradii,"original")
+        func.generate_pos_bgm(filepath_stl, nodes_centerline, radius_list,"original")
         root.after(0, gmsh_finalize) 
         
         root.after(0, gmsh_initialize)
-        surfacenode_dict, surfacenodes, surfacetriangles, mesh = func.make_surfacemesh(filepath_stl,nodes_centerline, edgeradii,mesh,"original")
+        surfacenode_dict, surfacenodes, surfacetriangles, mesh = func.make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,"original")
         root.after(0, gmsh_finalize) 
 
         mesh, layernode_dict,surfacetriangles = func.make_prismlayer(surfacenode_dict,surfacetriangles,mesh)
@@ -176,6 +177,7 @@ def button1_makemesh():
         gmsh.initialize()
         gmsh.merge(os.path.join("output", "allmesh_original.msh"))
         gmsh.write(os.path.join("output","allmesh_original.vtk"))
+        print("-------- Finished Make Mesh --------")
         func.GUI_setting()
         gmsh.fltk.run()
         root.after(0, gmsh_finalize)  
@@ -191,32 +193,37 @@ def button1_makemesh():
 
 def button2_deformmesh():
     if Switch:
-        if len(input_files)!=2:
+        if len(input_files)!=1:
             print("Error")
             return
         def worker():
             gmsh.initialize()
+            print("--------  Deform Mesh  --------")
             start_time=time.perf_counter()
 
             update_config()
-            filepath_targetcenterline = input_files[0]
-            filepath_radius = input_files[1]
+            filepath_target = input_files[0]
             mesh_deform = meshinfo.Mesh()
             
-            targetradius = myio.read_txt_edgeradii(filepath_radius)
-            nodes_targetcenterline = myio.read_txt_targetcenterline(filepath_targetcenterline)
-
+            nodes_targetcenterline, radius_list_target = myio.read_csv_target(filepath_target)
             filepath_movedsurface, nodes_moved_dict, surfacetriangles_moved, mesh_deform = func.deform_surface(nodes_targetcenterline,  
-                                                                                                                targetradius,
+                                                                                                                radius_list_target,
                                                                                                                 data.nodes_centerline,
                                                                                                                 data.surfacenodes,
                                                                                                                 data.surfacetriangles,mesh_deform)
-
             root.after(0, gmsh_initialize)
-            func.generate_pos_bgm(filepath_movedsurface,nodes_targetcenterline,targetradius,"deform")
+            if radius_list_target == None:
+                radius_for_bgm = func.calc_radius(filepath_movedsurface,nodes_targetcenterline)
+                for i in range(1,config.num_of_surfacenodes+1):
+                    nodes_moved_dict[i].find_projectable_centerlineedge(nodes_targetcenterline)
+                    nodes_moved_dict[i].set_edgeradius(radius_for_bgm)
+                root.after(0, gmsh_finalize)
+            else:
+                radius_for_bgm = radius_list_target
+            root.after(0, gmsh_initialize)
+            func.generate_pos_bgm(filepath_movedsurface,nodes_targetcenterline, radius_for_bgm,"deform")
             root.after(0, gmsh_finalize) 
 
-            # 左辺の返り値surfacetrianglesは不要な気がする
             mesh_deform, layernode_dict, surfacetriangles_moved = func.make_prismlayer(nodes_moved_dict,surfacetriangles_moved,mesh_deform)
 
             root.after(0, gmsh_initialize)
@@ -229,6 +236,7 @@ def button2_deformmesh():
             gmsh.initialize()
             gmsh.merge(os.path.join("output", "allmesh_deform.msh"))
             gmsh.write(os.path.join("output","allmesh_deform.vtk"))
+            print("-------- Finished Deform Mesh --------")
             func.GUI_setting()
             gmsh.fltk.run()
 
@@ -238,24 +246,28 @@ def button2_deformmesh():
         thread.start()
 
 def description():
+    print("------------------------------------------------------------------------------------------------------------")
     print("-- Explanation of buttons --")
-    print("Make Mesh   : Please input two files. 1.centerline (.txt) 2.tubesurface (.stl)")
-    print("Deform Mesh : If Make Mesh is already executed, you need...")
-    print("              1. target_centerline (.txt) 2. target_radius (.txt)")
+    print()
+    print("Make Mesh   : Please input two files. 1.centerline (.csv) 2.tubesurface (.stl)")
+    print("Deform Mesh : If Make Mesh is already executed, you need ... ")
+    print("              target centerline (.csv)")
+    print("              # if target.csv file includes target radius info, you can deform including radius direction.")
+    print()
     print()
     print("-- Explanation of meshing parameters --")
+    print()
     print("MESH SIZE and SCALING_FACTOR : Parameters for making background mesh. (Don't have to care.)" )
     print("FIRST_LAYER_RATIO            : thickness of most outer prism layer. percentage of local diameter." )
     print("GROWTH_RATE                  : thickness of each prism layer grow according to this percentage parameter." )
     print("NUM_OF_LAYERS                : number of prism layers." )
+    print("------------------------------------------------------------------------------------------------------------")
 
 def gmsh_finalize():
     gmsh.finalize()
-    print("Execute gmsh.finalize()")
 
 def gmsh_initialize():
     gmsh.initialize()
-    print("Execute gmsh.initialize()")
 
 def update_time_label(elapsed_time):
     time_label.config(text=f"processing time: {elapsed_time:.4f} s")

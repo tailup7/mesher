@@ -43,8 +43,6 @@ class Triangle:
         self.node1.correspond_centerlinenodes.append(self.correspond_centerlinenode)
         self.node2.correspond_centerlinenodes.append(self.correspond_centerlinenode)
 
-    
-
 class Quad:
     def __init__(self,id0,id1,id2,id3):
         self.id0=id0

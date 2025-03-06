@@ -5,31 +5,9 @@ import utility
 import sys
 import os
 from pathlib import Path
-
-def parse_value(value):
-    try:
-        if "." in value:
-            return float(value)  
-        return int(value)  
-    except ValueError:
-        return value 
-
-def read_txt_parameter(filepath):
-    param_dict = {}
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f"can't find : {filepath}")
-    with open(filepath, "r", encoding="utf-8") as file:
-        for line in file:
-            line = line.strip()
-            if not line or line.startswith("#"): 
-                continue
-            key, value = line.split("=", 1) 
-            param_dict[key.strip()] = parse_value(value.strip())
-    config.MESHSIZE = param_dict["MESHSIZE"]
-    config.SCALING_FACTOR = param_dict["SCALING_FACTOR"]
-    config.FIRST_LAYER_RATIO = param_dict["FIRST_LAYER_RATIO"]
-    config.GROWTH_RATE = param_dict["GROWTH_RATE"]
-    config.NUM_OF_LAYERS = param_dict["NUM_OF_LAYERS"]
+import pandas as pd
+import numpy as np
+from numpy.polynomial.polynomial import Polynomial
 
 def read_txt_centerline(filepath):
     if not os.path.isfile(filepath):
@@ -54,6 +32,36 @@ def read_txt_centerline(filepath):
             index += 1
     config.num_of_centerlinenodes = index
     return nodes_centerline
+
+def read_csv_original(filepath):
+    df=pd.read_csv(filepath)
+    nodes_centerline = [node.NodeCenterline(index, row['x'], row['y'], row['z']) for index, row in df.iterrows()]
+    config.inlet_point = nodes_centerline[0]
+    config.outlet_point = nodes_centerline[-1]
+    config.num_of_centerlinenodes = len(nodes_centerline)
+    return nodes_centerline
+
+def read_csv_target(filepath):
+    df = pd.read_csv(filepath)
+    nodes_targetcenterline = [node.NodeTargetCenterline(index, row['x'], row['y'], row['z']) for index, row in df.iterrows()]
+    if len(nodes_targetcenterline) != config.num_of_centerlinenodes:
+        print("error : num of original centerline nodes is not match to target centerline nodes" )
+        sys.exit()
+    config.inlet_point = nodes_targetcenterline[0]
+    config.outlet_point = nodes_targetcenterline[-1]
+
+    if "radius" in df.columns:
+        radius_list_target = df["radius"].tolist()
+        last_x = np.array([len(radius_list_target)-3, len(radius_list_target)-2, len(radius_list_target)-1])
+        last_y = radius_list_target[-3:]
+        p = Polynomial.fit(last_x, last_y, 1)
+        additional_radius = p(len(radius_list_target))
+        radius_list_target.append(additional_radius)
+    else:
+        radius_list_target = None
+
+    return nodes_targetcenterline, radius_list_target
+
 
 def read_txt_targetcenterline(filepath):
     if not os.path.isfile(filepath):
@@ -89,13 +97,14 @@ def read_txt_edgeradii(filepath):
     print("num_of_edgeradii=",num_of_edgeradii)
     return edgeradii
 
-def write_txt_edgeradii(edgeradii):
+def write_txt_radius(radius_list):
     os.makedirs("output",exist_ok = True)
     filepath=os.path.join("output","radius.txt")
     with open(filepath, 'w') as f:
-        f.write(f"# {len(edgeradii)}\n")
-        for edgeradius in edgeradii:
-            f.write(f"{edgeradius}\n")
+        f.write(f"# {len(radius_list)}\n")
+        for radius in radius_list:
+            f.write(f"{radius}\n")
+    print("Output radius.txt")
 
 def read_msh_tetra(filepath):
     tetra_list = []
@@ -131,6 +140,7 @@ def write_pos_bgm(tetra_list,nodeany_dict,filename):
             f.write(f"SS({c[0]},{c[1]},{c[2]},{c[3]},{c[4]},{c[5]},{c[6]},{c[7]},{c[8]},{c[9]},{c[10]},{c[11]})"
                     f"{{{s[0]:.2f},{s[1]:.2f},{s[2]:.2f},{s[3]:.2f}}};\n")
         f.write('};')
+    print(f"output bgm_{filename}.pos")
     return filepath
 
 def read_vtk_outersurface(filepath_vtk):
@@ -181,21 +191,6 @@ def read_vtk_outersurface(filepath_vtk):
     config.num_of_surfacenodes=node_id-1
     config.num_of_surfacetriangles = triangle_id-1
     return surfacenodes,surfacetriangles
-
-def write_stl_mostinnersurface(triangle_list):
-    filepath=os.path.join("output","mostinnersurface.stl")
-    with open(filepath, 'w') as f:
-        f.write("solid model\n")
-        for triangle in triangle_list:
-            f.write(f"  facet normal {triangle.unitnormal_out[0]} {triangle.unitnormal_out[1]} {triangle.unitnormal_out[2]}\n")
-            f.write("    outer loop\n")
-            f.write(f"      vertex {triangle.node0.x} {triangle.node0.y} {triangle.node0.z}\n")
-            f.write(f"      vertex {triangle.node1.x} {triangle.node1.y} {triangle.node1.z}\n")
-            f.write(f"      vertex {triangle.node2.x} {triangle.node2.y} {triangle.node2.z}\n")
-            f.write("    endloop\n")
-            f.write("  endfacet\n")
-        f.write("endsolid model\n")
-    return filepath
 
 def write_stl_innersurface(mesh,nodes_centerline,layernode_dict):
     filename = "innersurface_" + str(config.NUM_OF_LAYERS) + ".stl"
@@ -285,9 +280,7 @@ def read_msh_innermesh(filepath,mesh):
             node_id = int(parts[0])
             x, y, z = map(float, parts[1:4])
             node_innermesh = node.NodeAny(node_id, x, y, z) 
-            node_innermesh_dict[node_id]=node_innermesh      
-            # mesh.nodes.append(node_innermesh)
-            # mesh.num_of_nodes+=1
+            node_innermesh_dict[node_id]=node_innermesh
 
         if line.startswith("$Elements"):
             element_section = True

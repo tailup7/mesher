@@ -116,26 +116,26 @@ class NodeAny:
                     self.projectable_centerlineedge_id = ccid
                     self.projectable_centerlineedge_distance = utility.calculate_PH_length(self, nodes_centerline[ccid], nodes_centerline[ccid+1])
 
-    # edgeradii  の総数は、centerlinenodeの数 + 1
-    def set_edgeradius(self,edgeradii):
+    # radius_list  の総数は、centerlinenodeの数 + 1
+    def set_edgeradius(self,radius_list):
         if self.projectable_centerlineedge_id != None:
-            self.edgeradius = edgeradii[self.projectable_centerlineedge_id+1]
+            self.edgeradius = radius_list[self.projectable_centerlineedge_id+1]
         else:
             if self.closest_centerlinenode_id==0:
-                self.edgeradius=(edgeradii[0]+edgeradii[1])/2
+                self.edgeradius=(radius_list[0]+radius_list[1])/2
             elif self.closest_centerlinenode_id==config.num_of_centerlinenodes-1:
-                self.edgeradius=(edgeradii[-1]+edgeradii[-2])/2
+                self.edgeradius=(radius_list[-1]+radius_list[-2])/2
             else:
-                self.edgeradius=(edgeradii[self.closest_centerlinenode_id]+edgeradii[self.closest_centerlinenode_id+1])/2
+                self.edgeradius=(radius_list[self.closest_centerlinenode_id]+radius_list[self.closest_centerlinenode_id+1])/2
         self.scalar_forbgm = self.edgeradius*config.SCALING_FACTOR
         self.scalar_forlayer = self.edgeradius*2
 
 class NodeMoved(NodeAny):
-    def execute_deform_radius(self,targetedgeradii,nodes_centerline):
+    def execute_deform_radius(self,radius_list_target,nodes_centerline):
         if self.projectable_centerlineedge_id != None:
             radius_direction_vec = utility.vector(self)-self.projectable_H_vec
             radius_direction_unitvec = radius_direction_vec/np.linalg.norm(radius_direction_vec)
-            coef = targetedgeradii[self.projectable_centerlineedge_id+1] - self.projectable_centerlineedge_distance
+            coef = radius_list_target[self.projectable_centerlineedge_id+1] - self.projectable_centerlineedge_distance
             deform_vector = coef*radius_direction_unitvec
             self.x += deform_vector[0]
             self.y += deform_vector[1]
@@ -144,7 +144,7 @@ class NodeMoved(NodeAny):
             if self.closest_centerlinenode_id==0:
                 radius_direction_vec = utility.vector(self)-utility.calculate_H(self,nodes_centerline[0],nodes_centerline[1])
                 radius_direction_unitvec = radius_direction_vec/np.linalg.norm(radius_direction_vec)
-                coef = targetedgeradii[0] - np.linalg.norm(radius_direction_vec)
+                coef = radius_list_target[0] - np.linalg.norm(radius_direction_vec)
                 deform_vector = coef*radius_direction_unitvec
                 self.x += deform_vector[0]
                 self.y += deform_vector[1]
@@ -152,7 +152,7 @@ class NodeMoved(NodeAny):
             elif self.closest_centerlinenode_id==config.num_of_centerlinenodes-1:
                 radius_direction_vec = utility.vector(self)-utility.calculate_H(self,nodes_centerline[config.num_of_centerlinenodes-2],nodes_centerline[config.num_of_centerlinenodes-1])
                 radius_direction_unitvec = radius_direction_vec/np.linalg.norm(radius_direction_vec)
-                coef = targetedgeradii[-1] - np.linalg.norm(radius_direction_vec)
+                coef = radius_list_target[-1] - np.linalg.norm(radius_direction_vec)
                 deform_vector = coef*radius_direction_unitvec
                 self.x += deform_vector[0]
                 self.y += deform_vector[1]
@@ -160,7 +160,7 @@ class NodeMoved(NodeAny):
             else:
                 radius_direction_vec = utility.vector(self) - utility.vector(nodes_centerline[self.closest_centerlinenode_id])
                 radius_direction_unitvec = radius_direction_vec/np.linalg.norm(radius_direction_vec)
-                coef = (targetedgeradii[self.closest_centerlinenode_id]+targetedgeradii[self.closest_centerlinenode_id+1])/2 - np.linalg.norm(radius_direction_vec)
+                coef = (radius_list_target[self.closest_centerlinenode_id] + radius_list_target[self.closest_centerlinenode_id+1])/2 - np.linalg.norm(radius_direction_vec)
                 deform_vector = coef*radius_direction_unitvec
                 self.x += deform_vector[0]
                 self.y += deform_vector[1]

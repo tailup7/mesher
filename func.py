@@ -10,7 +10,7 @@ import trimesh
 import utility
 import cell
 
-def calc_edgeradii(filepath_stl,nodes_centerline):
+def calc_radius(filepath_stl,nodes_centerline):
     # 半径計算のため、読み込んだ表面形状を細かく再メッシュ
     gmsh.initialize(sys.argv)
     path = os.path.dirname(os.path.abspath(__file__))
@@ -35,61 +35,59 @@ def calc_edgeradii(filepath_stl,nodes_centerline):
     unique_nodes = np.unique(vertices, axis=0)
     surfacenodes = unique_nodes.tolist()
 
-    edgeradii=[]
+    radius_list=[]
     countor=[]    
-    edgeradii_smooth = []
+    radius_list_smooth = []
     for i in range(config.num_of_centerlinenodes+1):
-        edgeradii.append(0.0)
+        radius_list.append(0.0)
         countor.append(0)
-        edgeradii_smooth.append(0.0)
+        radius_list_smooth.append(0.0)
 
     for i in range(len(surfacenodes)):
         surfacenode=node.NodeAny(i,surfacenodes[i][0],surfacenodes[i][1],surfacenodes[i][2])
         surfacenode.find_closest_centerlinenode(nodes_centerline)
         surfacenode.find_projectable_centerlineedge(nodes_centerline)
         if surfacenode.projectable_centerlineedge_id != None:
-            edgeradii[surfacenode.projectable_centerlineedge_id+1] += surfacenode.projectable_centerlineedge_distance
+            radius_list[surfacenode.projectable_centerlineedge_id+1] += surfacenode.projectable_centerlineedge_distance
             countor[surfacenode.projectable_centerlineedge_id+1]+=1
         else:
             if surfacenode.closest_centerlinenode_id==0:
-                edgeradii[0] += utility.calculate_PH_length(surfacenode,nodes_centerline[0],nodes_centerline[1])
+                radius_list[0] += utility.calculate_PH_length(surfacenode,nodes_centerline[0],nodes_centerline[1])
                 countor[0] += 1
             elif surfacenode.closest_centerlinenode_id==config.num_of_centerlinenodes-1:
-                edgeradii[config.num_of_centerlinenodes] += utility.calculate_PH_length(surfacenode,nodes_centerline[-2],nodes_centerline[-1])
+                radius_list[config.num_of_centerlinenodes] += utility.calculate_PH_length(surfacenode,nodes_centerline[-2],nodes_centerline[-1])
                 countor[config.num_of_centerlinenodes] += 1
             else:
-                edgeradii[surfacenode.closest_centerlinenode_id]+=surfacenode.closest_centerlinenode_distance
+                radius_list[surfacenode.closest_centerlinenode_id]+=surfacenode.closest_centerlinenode_distance
                 countor[surfacenode.closest_centerlinenode_id] += 1
-                edgeradii[surfacenode.closest_centerlinenode_id+1]+=surfacenode.closest_centerlinenode_distance
+                radius_list[surfacenode.closest_centerlinenode_id+1]+=surfacenode.closest_centerlinenode_distance
                 countor[surfacenode.closest_centerlinenode_id+1] += 1
 
-    for i in range(len(edgeradii)):
+    for i in range(len(radius_list)):
         if countor[i]!=0:
-            edgeradii[i]=edgeradii[i]/countor[i]
+            radius_list[i] /= countor[i]
     
-    if edgeradii[0] < edgeradii[1]*0.7:
-        edgeradii[0] = edgeradii[1]
-    if edgeradii[-1] < edgeradii[-2]*0.7:
-        edgeradii[-1]=edgeradii[-2]
+    if radius_list[0] < radius_list[1]*0.7:
+        radius_list[0] = radius_list[1]
+    if radius_list[-1] < radius_list[-2]*0.7:
+        radius_list[-1]=radius_list[-2]
 
-    edgeradii_smooth[0]=(edgeradii[0]+edgeradii[1])/2
-    edgeradii_smooth[-1]=(edgeradii[-1]+edgeradii[-2])/2
-    for i in range(1,len(edgeradii)-1):
-        edgeradii_smooth[i] = (edgeradii[i-1]+edgeradii[i]+edgeradii[i+1])/3
+    radius_list_smooth[0]=(radius_list[0]+radius_list[1])/2
+    radius_list_smooth[-1]=(radius_list[-1]+radius_list[-2])/2
+    for i in range(1,len(radius_list)-1):
+        radius_list_smooth[i] = (radius_list[i-1]+radius_list[i]+radius_list[i+1])/3
 
-    config.inlet_radius = edgeradii_smooth[0]
-    config.outlet_radius = edgeradii_smooth[-1]
-    myio.write_txt_edgeradii(edgeradii_smooth)
+    config.inlet_radius = radius_list_smooth[0]
+    config.outlet_radius = radius_list_smooth[-1]
+    myio.write_txt_radius(radius_list_smooth)
 
-    edgeradii=edgeradii_smooth
-
-    return edgeradii
+    return radius_list_smooth
 
 # generate background mesh
-def generate_pos_bgm(filepath, nodes_centerline,edgeradii,filename):
+def generate_pos_bgm(filepath, nodes_centerline,radius_list,filename):
     gmsh.initialize(sys.argv)
     gmsh.merge(filepath)  
-    print("generate_pos_bgmでのパスは、",filepath)
+    print("filepath of input stl at generate_pos_bgm :",filepath)
     gmsh.model.mesh.classifySurfaces(angle = 40 * np.pi / 180, boundary=True, forReparametrization=True)
     gmsh.model.mesh.createGeometry()
     gmsh.model.geo.synchronize()
@@ -106,22 +104,22 @@ def generate_pos_bgm(filepath, nodes_centerline,edgeradii,filename):
     print("wall_id=",wall_id)
 
     boundary_curv = gmsh.model.getBoundary(wall)
-    print("boundary_curv=",boundary_curv)
+    print("1D entities which make boundary_curv are",boundary_curv)
     boundary_curv_id = [e[1] for e in boundary_curv]
-    print("boundary_curv_id=",boundary_curv_id)
+    print("IDs of 1D entities which make boundary_curv are ",boundary_curv_id)
 
     boundary_curv_id_list = gmsh.model.geo.addCurveLoops(boundary_curv_id)
-    print("boundary_curv_id_list=",boundary_curv_id_list)
+    print("Remake curve loops . These IDs are ",boundary_curv_id_list)
 
     for i in boundary_curv_id_list:
         a=gmsh.model.geo.addPlaneSurface([i])
-        print("a=",a)
+    print("Curve loops makes closed plane surface. IDs of plane surfaces are",a)
 
     gmsh.model.geo.synchronize()  
     check = gmsh.model.getEntities(2)
     print(check)
     surfaceAll_id = [e[1] for e in check]
-    print("surfaceAll_id=",surfaceAll_id)
+    print("All 2D surface entities IDs are ",surfaceAll_id)
     surfaceLoop=gmsh.model.geo.addSurfaceLoop(surfaceAll_id)
     gmsh.model.geo.addVolume([surfaceLoop])
     gmsh.model.geo.synchronize()  
@@ -136,17 +134,19 @@ def generate_pos_bgm(filepath, nodes_centerline,edgeradii,filename):
     msh_file = os.path.join(output_folder, f"bgm_{filename}.msh")
     gmsh.write(vtk_file)
     gmsh.write(msh_file)
+    print(f"output bgm_{filename}.vtk")
+    print(f"output bgm_{filename}.msh")
 
     nodeany_dict={}                                          
     for node_any in nodes_any:
         nodeany_dict[node_any.id] = node_any  
         node_any.find_closest_centerlinenode(nodes_centerline)
         node_any.find_projectable_centerlineedge(nodes_centerline)
-        node_any.set_edgeradius(edgeradii)
+        node_any.set_edgeradius(radius_list)
     tetra_list = myio.read_msh_tetra(msh_file)
     filepath_pos=myio.write_pos_bgm(tetra_list,nodeany_dict,filename)
 
-def make_surfacemesh(filepath_stl,nodes_centerline, edgeradii,mesh,filename):
+def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
     gmsh.initialize()
     path = os.path.dirname(os.path.abspath(__file__))
     gmsh.merge(os.path.join(path, filepath_stl))
@@ -178,13 +178,15 @@ def make_surfacemesh(filepath_stl,nodes_centerline, edgeradii,mesh,filename):
     stl_file = os.path.join(output_folder, f"surfacemesh_{filename}.stl")
     gmsh.write(vtk_file)
     gmsh.write(stl_file)
+    print(f"output surfacemesh_{filename}.vtk")
+    print(f"output surfacemesh_{filename}.stl")
 
     surfacenodes,surfacetriangles = myio.read_vtk_outersurface(vtk_file) 
     surfacenode_dict={}
     for surfacenode in surfacenodes:
         surfacenode.find_closest_centerlinenode(nodes_centerline)
         surfacenode.find_projectable_centerlineedge(nodes_centerline)
-        surfacenode.set_edgeradius(edgeradii)
+        surfacenode.set_edgeradius(radius_list)
         surfacenode_dict[surfacenode.id] = surfacenode
         mesh.nodes.append(surfacenode)
         mesh.num_of_nodes += 1
@@ -202,8 +204,8 @@ def make_prismlayer(surfacenode_dict,surfacetriangles,mesh):
     for i in range(1,config.NUM_OF_LAYERS+1):
         mesh,layernode_dict=boundarylayer.make_nthlayer_surfacenode(i, surfacenode_dict, surfacetriangles, mesh)
         mesh=boundarylayer.make_nthlayer_prism(i,surfacetriangles,mesh)
-
         config.num_of_boundarylayernodes = mesh.num_of_nodes
+    print("generate prism layer")
 
     return mesh, layernode_dict, surfacetriangles
 
@@ -324,7 +326,9 @@ def make_tetramesh(nodes_centerline,layernode_dict,mesh,filename):
     gmsh.write(vtk_file)
     gmsh.write(stl_file)
     gmsh.write(msh_file)
-
+    print(f"output innermesh_{filename}.vtk")
+    print(f"output innermesh_{filename}.stl")
+    print(f"output innermesh_{filename}.msh")
     mesh = myio.read_msh_innermesh(msh_file,mesh)
 
     return mesh
@@ -340,10 +344,11 @@ def naming_inlet_outlet(mesh,nodes_centerline):
         if mesh.nodes[i].on_outlet_boundaryedge == True:
             nodes_on_outletboundaryedge.append(mesh.nodes[i])
     for i in range(1,config.NUM_OF_LAYERS+1):
-        mesh = boundarylayer.make_nthlayer_quad_new(i,nodes_centerline, nodes_on_inletboundaryedge, nodes_on_outletboundaryedge,mesh)
+        mesh = boundarylayer.make_nthlayer_quad(i,nodes_centerline, nodes_on_inletboundaryedge, nodes_on_outletboundaryedge,mesh)
+    print("naming INLET OUTLET to quadrangles on surface.")
     return mesh
 
-def deform_surface(nodes_targetcenterline, targetradius, nodes_centerline,surfacenodes,surfacetriangles,mesh):
+def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,surfacenodes,surfacetriangles,mesh):
     for i in range(config.num_of_centerlinenodes):
         nodes_centerline[i].calc_tangentvec(nodes_centerline)
         nodes_targetcenterline[i].calc_tangentvec(nodes_targetcenterline)
@@ -369,10 +374,14 @@ def deform_surface(nodes_targetcenterline, targetradius, nodes_centerline,surfac
         surfacenode_moved.x = surfacenode_moved.x/countor
         surfacenode_moved.y = surfacenode_moved.y/countor
         surfacenode_moved.z = surfacenode_moved.z/countor
+
+
         surfacenode_moved.find_closest_centerlinenode(nodes_targetcenterline)
-        surfacenode_moved.find_projectable_centerlineedge(nodes_targetcenterline)
-        surfacenode_moved.set_edgeradius(targetradius)
-        surfacenode_moved.execute_deform_radius(targetradius,nodes_targetcenterline)
+        if radius_list_target != None:
+            surfacenode_moved.find_projectable_centerlineedge(nodes_targetcenterline)
+            surfacenode_moved.set_edgeradius(radius_list_target)
+            surfacenode_moved.execute_deform_radius(radius_list_target,nodes_targetcenterline)
+
         mesh.nodes.append(surfacenode_moved)
         mesh.num_of_nodes += 1
         nodes_moved_dict[surfacenode.id]=surfacenode_moved
@@ -393,6 +402,7 @@ def deform_surface(nodes_targetcenterline, targetradius, nodes_centerline,surfac
         mesh.num_of_elements += 1
 
     filepath_movedsurface = myio.write_stl_surfacetriangles(surfacetriangles_moved,"movedsurface.stl")
+    print("Execute mesh deformation. output movedsurface.stl")
     return filepath_movedsurface,nodes_moved_dict,surfacetriangles_moved,mesh
 
 def GUI_setting():
