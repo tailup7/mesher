@@ -172,14 +172,14 @@ def button1_makemesh():
         root.after(0, gmsh_finalize)  
 
         mesh=func.naming_inlet_outlet(mesh,nodes_centerline)
-            
+
         myio.write_msh_allmesh(mesh,"original")    
         gmsh.initialize()
         gmsh.merge(os.path.join("output", "allmesh_original.msh"))
         gmsh.write(os.path.join("output","allmesh_original.vtk"))
         print("-------- Finished Make Mesh --------")
-        func.GUI_setting()
-        gmsh.fltk.run()
+        # func.GUI_setting()
+        # gmsh.fltk.run()
         root.after(0, gmsh_finalize)  
 
         root.after(0, lambda : setattr(data, "nodes_centerline", nodes_centerline))
