@@ -1,6 +1,6 @@
-^C:\GIT\HOWTOVM\MAKETUBE\CMAKELISTS.TXT
+^C:\GIT\MESHER\ASSETS\MAKETUBE\CMAKELISTS.TXT
 setlocal
-C:\Users\Kouzb\0\LAPACK\bin\cmake.exe -SC:/git/howtoVM/maketube -BC:/git/howtoVM/maketube/build --check-stamp-file C:/git/howtoVM/maketube/build/CMakeFiles/generate.stamp
+C:\Users\Kouzb\0\LAPACK\bin\cmake.exe -SC:/git/mesher/assets/maketube -BC:/git/mesher/assets/maketube/build --check-stamp-file C:/git/mesher/assets/maketube/build/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone

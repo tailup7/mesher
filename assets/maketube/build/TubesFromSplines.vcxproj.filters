@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\git\howtoVM\maketube\TubesFromSplines.cxx">
+    <ClCompile Include="C:\git\mesher\assets\maketube\TubesFromSplines.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\git\howtoVM\maketube\CMakeLists.txt" />
+    <CustomBuild Include="C:\git\mesher\assets\maketube\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{EA1BD3CC-D044-3EF1-A2AE-BA9772A103C2}</UniqueIdentifier>
+      <UniqueIdentifier>{C4FB0F93-146D-3F7C-B4A7-9F37737E4B6E}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

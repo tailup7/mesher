@@ -361,8 +361,8 @@
 	"kind" : "cmakeFiles",
 	"paths" : 
 	{
-		"build" : "C:/git/howtoVM/maketube/out/build/x64-Debug",
-		"source" : "C:/git/howtoVM/maketube"
+		"build" : "C:/git/mesher/assets/maketube/out/build/x64-Debug",
+		"source" : "C:/git/mesher/assets/maketube"
 	},
 	"version" : 
 	{

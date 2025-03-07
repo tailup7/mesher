@@ -1,4 +1,4 @@
-# Install script for directory: C:/git/howtoVM/maketube
+# Install script for directory: C:/git/mesher/assets/maketube
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -47,6 +47,6 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-  file(WRITE "C:/git/howtoVM/maketube/build/${CMAKE_INSTALL_MANIFEST}"
+  file(WRITE "C:/git/mesher/assets/maketube/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
 endif()

@@ -39,7 +39,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "c:/git/howtoVM/maketube/out/build/x64-Debug"
+			"value" : "c:/git/mesher/assets/maketube/out/build/x64-Debug"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -467,7 +467,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/git/howtoVM/maketube/out/build/x64-Debug/CMakeFiles/pkgRedirects"
+			"value" : "C:/git/mesher/assets/maketube/out/build/x64-Debug/CMakeFiles/pkgRedirects"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -563,7 +563,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "C:/git/howtoVM/maketube"
+			"value" : "C:/git/mesher/assets/maketube"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -575,7 +575,7 @@
 				}
 			],
 			"type" : "PATH",
-			"value" : "C:/git/howtoVM/maketube/out/install/x64-Debug"
+			"value" : "C:/git/mesher/assets/maketube/out/install/x64-Debug"
 		},
 		{
 			"name" : "CMAKE_LINKER",
@@ -1135,7 +1135,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/git/howtoVM/maketube/out/build/x64-Debug"
+			"value" : "C:/git/mesher/assets/maketube/out/build/x64-Debug"
 		},
 		{
 			"name" : "TubesFromSplines_IS_TOP_LEVEL",
@@ -1159,7 +1159,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "C:/git/howtoVM/maketube"
+			"value" : "C:/git/mesher/assets/maketube"
 		},
 		{
 			"name" : "VTK_DIR",

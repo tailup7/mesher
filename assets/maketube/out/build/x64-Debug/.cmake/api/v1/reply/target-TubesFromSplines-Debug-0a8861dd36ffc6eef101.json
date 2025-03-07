@@ -188,15 +188,15 @@
 				},
 				{
 					"backtrace" : 22,
-					"define" : "vtkRenderingContext2D_AUTOINIT_INCLUDE=\"C:/git/howtoVM/maketube/out/build/x64-Debug/CMakeFiles/vtkModuleAutoInit_04d683062bbc5774e34e8c62b13e1a5a.h\""
+					"define" : "vtkRenderingContext2D_AUTOINIT_INCLUDE=\"C:/git/mesher/assets/maketube/out/build/x64-Debug/CMakeFiles/vtkModuleAutoInit_04d683062bbc5774e34e8c62b13e1a5a.h\""
 				},
 				{
 					"backtrace" : 22,
-					"define" : "vtkRenderingCore_AUTOINIT_INCLUDE=\"C:/git/howtoVM/maketube/out/build/x64-Debug/CMakeFiles/vtkModuleAutoInit_04d683062bbc5774e34e8c62b13e1a5a.h\""
+					"define" : "vtkRenderingCore_AUTOINIT_INCLUDE=\"C:/git/mesher/assets/maketube/out/build/x64-Debug/CMakeFiles/vtkModuleAutoInit_04d683062bbc5774e34e8c62b13e1a5a.h\""
 				},
 				{
 					"backtrace" : 22,
-					"define" : "vtkRenderingOpenGL2_AUTOINIT_INCLUDE=\"C:/git/howtoVM/maketube/out/build/x64-Debug/CMakeFiles/vtkModuleAutoInit_04d683062bbc5774e34e8c62b13e1a5a.h\""
+					"define" : "vtkRenderingOpenGL2_AUTOINIT_INCLUDE=\"C:/git/mesher/assets/maketube/out/build/x64-Debug/CMakeFiles/vtkModuleAutoInit_04d683062bbc5774e34e8c62b13e1a5a.h\""
 				}
 			],
 			"includes" : 
