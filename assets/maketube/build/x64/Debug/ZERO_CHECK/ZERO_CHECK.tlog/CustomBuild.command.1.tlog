@@ -1,0 +1,10 @@
+^C:\GIT\HOWTOVM\MAKETUBE\BUILD\CMAKEFILES\61432EBA0BF131109136A59D31A1FF9A\GENERATE.STAMP.RULE
+setlocal
+C:\Users\Kouzb\0\LAPACK\bin\cmake.exe -SC:/git/howtoVM/maketube -BC:/git/howtoVM/maketube/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/git/howtoVM/maketube/build/TubesFromSplines.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

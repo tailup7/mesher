@@ -1,0 +1,3 @@
+C:/git/howtoVM/maketube/out/build/x64-Debug/CMakeFiles/TubesFromSplines.dir
+C:/git/howtoVM/maketube/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+C:/git/howtoVM/maketube/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir
