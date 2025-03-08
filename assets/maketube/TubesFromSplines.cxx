@@ -1,7 +1,7 @@
-#define _USE_MATH_DEFINES
+ï»¿#define _USE_MATH_DEFINES
 #include <cmath>
 #include <iostream>
-#include <fstream>  
+#include <fstream>
 #include <vtkActor.h>
 #include <vtkDoubleArray.h>
 #include <vtkNamedColors.h>
@@ -22,79 +22,91 @@ int main(int, char* [])
 {
     vtkNew<vtkPoints> points;
 
-    // ‚ç‚¹‚ñ‚Ìƒpƒ‰ƒ[ƒ^
-    int numTurns = 3;     // ‚ç‚¹‚ñ‚ÌŠª‚«”
-    int numPoints = 100;  // 1‚Â‚Ì‚ç‚¹‚ñ‚É‚¨‚¯‚éƒ|ƒCƒ“ƒg”
-    double radius = 10.0;  // ”¼Œa
-    double height = 100.0; // ‚ç‚¹‚ñ‚Ì‚‚³
-    double angleStep = 2 * M_PI / (numPoints / numTurns);  // Šp“x‚ÌƒXƒeƒbƒvƒTƒCƒY
+    // ã‚‰ã›ã‚“ã®ãƒ‘ãƒ©ãƒ¡ãƒ¼ã‚¿
+    int numTurns = 3;     // ã‚‰ã›ã‚“ã®å·»ãæ•°
+    int numPoints = 100;  // ä¸­å¿ƒç·šç‚¹æ•°ã‚’æ±ºã‚ã‚‹è¦å› ã®1ã¤
+    double radius = 10.0;  // åŠå¾„
+    double height = 100.0; // ã‚‰ã›ã‚“ã®é«˜ã•
+    double angleStep = 2 * M_PI / (numPoints / numTurns);  // è§’åº¦ã®ã‚¹ãƒ†ãƒƒãƒ—ã‚µã‚¤ã‚º
 
     for (int i = 0; i < numPoints; ++i)
     {
-        double theta = i * angleStep;  // Šp“x (ƒ‰ƒWƒAƒ“)
+        double theta = i * angleStep;  // è§’åº¦ (ãƒ©ã‚¸ã‚¢ãƒ³)
         double x = radius * cos(theta);
         double y = radius * sin(theta);
-        double z = (height / (numTurns * 2 * M_PI)) * theta;  // ‚‚³‚ğˆê’è‚Éã¸
+        double z = (height / (numTurns * 2 * M_PI)) * theta;  // é«˜ã•ã‚’ä¸€å®šã«ä¸Šæ˜‡
         points->InsertPoint(i, x, y, z);
     }
 
-    // ƒXƒvƒ‰ƒCƒ“•âŠÔ
+    // ã‚¹ãƒ—ãƒ©ã‚¤ãƒ³è£œé–“
     vtkNew<vtkParametricSpline> spline;
     spline->SetPoints(points);
     vtkNew<vtkParametricFunctionSource> functionSource;
     functionSource->SetParametricFunction(spline);
-    functionSource->SetUResolution(10 * points->GetNumberOfPoints());
+    functionSource->SetUResolution(10 * points->GetNumberOfPoints()); // ä¸­å¿ƒç·šã®ç‚¹ã®æ•°ã‚’å¢—ã‚„ã™
     functionSource->Update();
 
-    // === CSV o—Í‚ğ’Ç‰Á ===
+    // === CSV å‡ºåŠ›ã‚’è¿½åŠ  ===
     std::ofstream csvFile("helix_centerline.csv");
     if (!csvFile) {
         std::cerr << "Error: Cannot open file for writing CSV." << std::endl;
         return EXIT_FAILURE;
     }
 
-    csvFile << "x,y,z\n"; // ƒwƒbƒ_[s‚ğ’Ç‰Á
+    csvFile << "x,y,z\n"; // ãƒ˜ãƒƒãƒ€ãƒ¼è¡Œã‚’è¿½åŠ 
     auto tubePolyData = functionSource->GetOutput();
     for (unsigned int i = 0; i < tubePolyData->GetNumberOfPoints(); ++i)
     {
         double p[3];
-        tubePolyData->GetPoint(i, p);  // x, y, z ‚ğæ“¾
-        csvFile << p[0] << "," << p[1] << "," << p[2] << "\n"; // CSV ‚É‘‚«‚Ş
+        tubePolyData->GetPoint(i, p);  // x, y, z ã‚’å–å¾—
+        csvFile << p[0] << "," << p[1] << "," << p[2] << "\n"; // CSV ã«æ›¸ãè¾¼ã‚€
     }
     csvFile.close();
     std::cout << "CSV file saved as 'helix_centerline.csv'" << std::endl;
-    // === ‚±‚±‚Ü‚Å CSV o—Í ===
 
-    // ”¼Œaˆê’è‚ÌƒXƒJƒ‰[’l‚ğ¶¬
+    // === ç‰¹å®šç¯„å›²ã®åŠå¾„ã‚’5æ¬¡é–¢æ•°ã§å¤‰æ›´ ===
     vtkNew<vtkDoubleArray> tubeRadius;
     unsigned int n = functionSource->GetOutput()->GetNumberOfPoints();
     tubeRadius->SetNumberOfTuples(n);
     tubeRadius->SetName("TubeRadius");
-    double r = 2.0;  // ”¼Œa‚ğˆê’è‚É
+
+    // ç‰¹å®šç¯„å›²ã‚’æŒ‡å®š
+    int startIndex = 500;  // å¤‰åŒ–ã‚’é©ç”¨ã™ã‚‹é–‹å§‹ç‚¹
+    int endIndex = 550;    // å¤‰åŒ–ã‚’é©ç”¨ã™ã‚‹çµ‚äº†ç‚¹
+
     for (unsigned int i = 0; i < n; ++i)
     {
+        double r = 2.0; // ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®åŠå¾„
+
+        // ä¸­å¿ƒç·šã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãŒ 500~550 ã®ç¯„å›²ã®å ´åˆã®ã¿ 5æ¬¡é–¢æ•°ã‚’é©ç”¨
+        if (i >= startIndex && i <= endIndex)
+        {
+            double t = static_cast<double>(i - startIndex) / (endIndex - startIndex); // 0.0 ã€œ 1.0 ã®ç¯„å›²
+            r = 2.0 -24 *  pow(t, 2) + 48 * pow(t,3) - 24 * pow(t, 4) ; // 5æ¬¡é–¢æ•°ã®å®šç¾©
+        }
+
         tubeRadius->SetTuple1(i, r);
     }
 
-    // ƒXƒJƒ‰[’l‚ğ“K—p
+    // ã‚¹ã‚«ãƒ©ãƒ¼å€¤ã‚’é©ç”¨
     tubePolyData->GetPointData()->AddArray(tubeRadius);
     tubePolyData->GetPointData()->SetActiveScalars("TubeRadius");
 
-    // ƒ`ƒ…[ƒuŒ`ó‚ğ¶¬
+    // ãƒãƒ¥ãƒ¼ãƒ–å½¢çŠ¶ã‚’ç”Ÿæˆ
     vtkNew<vtkTubeFilter> tuber;
     tuber->SetInputData(tubePolyData);
     tuber->SetNumberOfSides(20);
     tuber->SetVaryRadiusToVaryRadiusByAbsoluteScalar();
 
-    // STLƒtƒ@ƒCƒ‹‚É‘‚«o‚µ
+    // STLãƒ•ã‚¡ã‚¤ãƒ«ã«æ›¸ãå‡ºã—
     vtkNew<vtkSTLWriter> writer;
-    writer->SetFileName("helix_output.stl");
+    writer->SetFileName("helix_output_variable_radius.stl");
     writer->SetInputConnection(tuber->GetOutputPort());
     writer->Write();
 
-    std::cout << "STL file saved as 'helix_output.stl'" << std::endl;
+    std::cout << "STL file saved as 'helix_output_variable_radius.stl'" << std::endl;
 
-    //-------------- ‰Â‹‰»‚Ìİ’è --------------
+    //-------------- å¯è¦–åŒ–ã®è¨­å®š --------------
     vtkNew<vtkPolyDataMapper> tubeMapper;
     tubeMapper->SetInputConnection(tuber->GetOutputPort());
     tubeMapper->SetScalarRange(tubePolyData->GetScalarRange());
@@ -109,7 +121,7 @@ int main(int, char* [])
     vtkNew<vtkRenderWindow> renderWindow;
     renderWindow->AddRenderer(renderer);
     renderWindow->SetSize(640, 480);
-    renderWindow->SetWindowName("HelixTube");
+    renderWindow->SetWindowName("HelixTube with Variable Radius");
 
     vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
     renderWindowInteractor->SetRenderWindow(renderWindow);
@@ -121,5 +133,6 @@ int main(int, char* [])
 
     return EXIT_SUCCESS;
 }
+
 
 
