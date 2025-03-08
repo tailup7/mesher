@@ -4,7 +4,7 @@
 </p>
 
 ## Overview
-Code that reads in tuce shape and creates a tetra-prism composite mesh. Output file can be used for CFD.  
+Code that reads in tube shape and generates a tetra-prism hybrid mesh. Output file can be used for CFD.  
 The mesh size is automatically adjusted even if there are areas where the tube diameter is extraordinary smaller or larger, which would normally require regionalization. <br>
 The background mesh function of gmsh is used to control the mesh size ( https://gmsh.info/doc/texinfo/gmsh.html#t7 ). <br>
 The output mesh file can be deformed as shown below.
