@@ -13,15 +13,10 @@ The output mesh file can be deformed as shown below.
 + Copy all the above files to your local environment.
 + Change directory containing the copied files. 
 + Make python venv and install requirements.txt (https://qiita.com/shun_sakamoto/items/7944d0ac4d30edf91fde).
-<p align="left">
-  <img src="https://github.com/tailup7/mesher/blob/main/picture/gui.png" alt="meshing" width="500"/>
-</p>
-
-
++ If you don't install Gmsh itself, please delete the next sentence in the main.py.
++ ``` gmsh.fltk.run() ```
++ and then,
 + ``` python main.py ```
-+ 「0」: If need, change meshing parameter.
-+ 「1」: Select centerline data and tube surface data.
-+ 「2」: Excute meshing. Mesh file "allmesh.vtk", "allmesh.msh" will be output in output folder.
   + I recommend installing Gmsh itself. With it, you can open (*.msh) files in the viewer.
   + (If you don't have gmsh, please view the allmesh.vtk file with paraview.)
 
