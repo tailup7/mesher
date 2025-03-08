@@ -1,3 +1,5 @@
 .vs/
 *.VC.db
 *.ipch
+backup.cxx
+data/
