@@ -22,83 +22,87 @@ int main(int, char* [])
 {
     vtkNew<vtkPoints> points;
 
-    // らせんのパラメータ
-    int numTurns = 3;     // らせんの巻き数
-    int numPoints = 100;  // 中心線点数を決める要因の1つ
-    double radius = 10.0;  // 半径
-    double height = 100.0; // らせんの高さ
-    double angleStep = 2 * M_PI / (numPoints / numTurns);  // 角度のステップサイズ
+    // **直線のパラメータ**
+    int numPoints = 100;  // 中心線の点の数
+    double length = 100.0; // 直線の長さ
+    double radius = 5.0;   // デフォルトの半径
+    double zStep = length / (numPoints - 1); // z方向のステップサイズ
 
+    // **直線の中心線を作成**
     for (int i = 0; i < numPoints; ++i)
     {
-        double theta = i * angleStep;  // 角度 (ラジアン)
-        double x = radius * cos(theta);
-        double y = radius * sin(theta);
-        double z = (height / (numTurns * 2 * M_PI)) * theta;  // 高さを一定に上昇
+        double x = 0.0;
+        double y = 0.0;
+        double z = i * zStep;
         points->InsertPoint(i, x, y, z);
     }
 
-    // スプライン補間
+    // **スプライン補間**
     vtkNew<vtkParametricSpline> spline;
     spline->SetPoints(points);
     vtkNew<vtkParametricFunctionSource> functionSource;
     functionSource->SetParametricFunction(spline);
-    functionSource->SetUResolution(10 * points->GetNumberOfPoints()); // 中心線の点の数を増やす
+    functionSource->SetUResolution(10 * points->GetNumberOfPoints());
     functionSource->Update();
 
-    // === CSV 出力を追加 ===
+    // === CSV 出力 ===
     std::ofstream csvFile("helix_centerline.csv");
     if (!csvFile) {
         std::cerr << "Error: Cannot open file for writing CSV." << std::endl;
         return EXIT_FAILURE;
     }
 
-    csvFile << "x,y,z\n"; // ヘッダー行を追加
+    csvFile << "x,y,z\n";
     auto tubePolyData = functionSource->GetOutput();
     for (unsigned int i = 0; i < tubePolyData->GetNumberOfPoints(); ++i)
     {
         double p[3];
-        tubePolyData->GetPoint(i, p);  // x, y, z を取得
-        csvFile << p[0] << "," << p[1] << "," << p[2] << "\n"; // CSV に書き込む
+        tubePolyData->GetPoint(i, p);
+        csvFile << p[0] << "," << p[1] << "," << p[2] << "\n";
     }
     csvFile.close();
     std::cout << "CSV file saved as 'helix_centerline.csv'" << std::endl;
 
-    // === 特定範囲の半径を5次関数で変更 ===
+    // === **Z座標に基づいた半径変化（中央部に狭窄を作る）** ===
     vtkNew<vtkDoubleArray> tubeRadius;
     unsigned int n = functionSource->GetOutput()->GetNumberOfPoints();
     tubeRadius->SetNumberOfTuples(n);
     tubeRadius->SetName("TubeRadius");
 
-    // 特定範囲を指定
-    int startIndex = 500;  // 変化を適用する開始点
-    int endIndex = 550;    // 変化を適用する終了点
+    double zMin = 0.0;      // 直線の下端
+    double zMax = length;   // 直線の上端
+    double narrowCenter = 50.0;  // 狭窄の中心 (Z=50)
+    double narrowWidth = 20.0;   // 狭窄の幅（±5）
 
     for (unsigned int i = 0; i < n; ++i)
     {
-        double r = 2.0; // デフォルトの半径
+        double p[3];
+        tubePolyData->GetPoint(i, p);
+        double z = p[2];  // Z座標
 
-        // 中心線インデックスが 500~550 の範囲の場合のみ 5次関数を適用
-        if (i >= startIndex && i <= endIndex)
+        double r = 5.0; // デフォルトの半径
+
+        // **中央付近（Z=50±5）のみ半径を5次関数で変化**
+        if (z >= (narrowCenter - narrowWidth / 2) && z <= (narrowCenter + narrowWidth / 2))
         {
-            double t = static_cast<double>(i - startIndex) / (endIndex - startIndex); // 0.0 〜 1.0 の範囲
-            r = 2.0 -24 *  pow(t, 2) + 48 * pow(t,3) - 24 * pow(t, 4) ; // 5次関数の定義
+            double t = (z - (narrowCenter - narrowWidth / 2)) / narrowWidth; // 0.0〜1.0 の範囲
+            r = 5.0 - 48 * pow(t, 2) + 96 * pow(t, 3) - 48 * pow(t, 4);
         }
 
         tubeRadius->SetTuple1(i, r);
     }
 
-    // スカラー値を適用
+    // **スカラー値を適用**
     tubePolyData->GetPointData()->AddArray(tubeRadius);
     tubePolyData->GetPointData()->SetActiveScalars("TubeRadius");
 
-    // チューブ形状を生成
+    // **チューブ形状を生成**
     vtkNew<vtkTubeFilter> tuber;
     tuber->SetInputData(tubePolyData);
     tuber->SetNumberOfSides(20);
     tuber->SetVaryRadiusToVaryRadiusByAbsoluteScalar();
 
-    // STLファイルに書き出し
+    // **STLファイルに書き出し**
     vtkNew<vtkSTLWriter> writer;
     writer->SetFileName("helix_output_variable_radius.stl");
     writer->SetInputConnection(tuber->GetOutputPort());
@@ -121,7 +125,7 @@ int main(int, char* [])
     vtkNew<vtkRenderWindow> renderWindow;
     renderWindow->AddRenderer(renderer);
     renderWindow->SetSize(640, 480);
-    renderWindow->SetWindowName("HelixTube with Variable Radius");
+    renderWindow->SetWindowName("Straight Tube with Variable Radius");
 
     vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
     renderWindowInteractor->SetRenderWindow(renderWindow);
@@ -133,6 +137,7 @@ int main(int, char* [])
 
     return EXIT_SUCCESS;
 }
+
 
 
 

@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 XS = 0
 XE = 1
 NUM_POINTS = 100
-R_MAX = 2
-R_MIN = 0.5
+R_MAX = 5
+R_MIN = 2
 
 z = np.linspace(XS, XE, NUM_POINTS)
 
