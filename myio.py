@@ -8,6 +8,26 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from numpy.polynomial.polynomial import Polynomial
+import tkinter as tk
+from tkinter import filedialog
+
+def select_csv():
+    root = tk.Tk()
+    root.withdraw()  
+    file_path = filedialog.askopenfilename(
+        title="Select centerline file",
+        filetypes=[("CSV files", "*.csv")]  
+    )
+    return file_path
+
+def select_stl():
+    root = tk.Tk()
+    root.withdraw()  
+    file_path = filedialog.askopenfilename(
+        title="Select surface file",
+        filetypes=[("stl files", "*.stl")]  
+    )
+    return file_path
 
 def read_txt_centerline(filepath):
     if not os.path.isfile(filepath):

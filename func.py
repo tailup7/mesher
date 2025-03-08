@@ -12,7 +12,8 @@ import cell
 
 def calc_radius(filepath_stl,nodes_centerline):
     # 半径計算のため、読み込んだ表面形状を細かく再メッシュ
-    gmsh.initialize(sys.argv)
+    if not gmsh.isInitialized():
+        gmsh.initialize()
     path = os.path.dirname(os.path.abspath(__file__))
     gmsh.merge(os.path.join(path, filepath_stl)) 
     gmsh.model.mesh.classifySurfaces(angle = 40 * np.pi / 180, boundary=True, forReparametrization=True)
@@ -81,11 +82,14 @@ def calc_radius(filepath_stl,nodes_centerline):
     config.outlet_radius = radius_list_smooth[-1]
     myio.write_txt_radius(radius_list_smooth)
 
+    gmsh.finalize()
+
     return radius_list_smooth
 
 # generate background mesh
 def generate_pos_bgm(filepath, nodes_centerline,radius_list,filename):
-    gmsh.initialize(sys.argv)
+    if not gmsh.isInitialized():
+        gmsh.initialize()
     gmsh.merge(filepath)  
     print("filepath of input stl at generate_pos_bgm :",filepath)
     gmsh.model.mesh.classifySurfaces(angle = 40 * np.pi / 180, boundary=True, forReparametrization=True)
@@ -146,8 +150,11 @@ def generate_pos_bgm(filepath, nodes_centerline,radius_list,filename):
     tetra_list = myio.read_msh_tetra(msh_file)
     filepath_pos=myio.write_pos_bgm(tetra_list,nodeany_dict,filename)
 
+    gmsh.finalize()
+
 def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
-    gmsh.initialize()
+    if not gmsh.isInitialized():
+        gmsh.initialize()
     path = os.path.dirname(os.path.abspath(__file__))
     gmsh.merge(os.path.join(path, filepath_stl))
     filepath_pos=os.path.join(path, "output","bgm_original.pos")
@@ -197,6 +204,8 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
         surfacetriangle.assign_correspondcenterlinenode_to_surfacenode()
         mesh.triangles_WALL.append(surfacetriangle)
         mesh.num_of_elements += 1
+
+    gmsh.finalize()
     return surfacenode_dict, surfacenodes, surfacetriangles, mesh
 
 def make_prismlayer(surfacenode_dict,surfacetriangles,mesh):
@@ -330,7 +339,7 @@ def make_tetramesh(nodes_centerline,layernode_dict,mesh,filename):
     print(f"output innermesh_{filename}.stl")
     print(f"output innermesh_{filename}.msh")
     mesh = myio.read_msh_innermesh(msh_file,mesh)
-
+    gmsh.finalize()
     return mesh
 
 def naming_inlet_outlet(mesh,nodes_centerline):
@@ -349,6 +358,7 @@ def naming_inlet_outlet(mesh,nodes_centerline):
     return mesh
 
 def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,surfacenodes,surfacetriangles,mesh):
+    print("now deforming surface mesh")
     for i in range(config.num_of_centerlinenodes):
         nodes_centerline[i].calc_tangentvec(nodes_centerline)
         nodes_targetcenterline[i].calc_tangentvec(nodes_targetcenterline)
@@ -402,7 +412,7 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         mesh.num_of_elements += 1
 
     filepath_movedsurface = myio.write_stl_surfacetriangles(surfacetriangles_moved,"movedsurface.stl")
-    print("Execute mesh deformation. output movedsurface.stl")
+    print("finished deforming surface mesh. output movedsurface.stl")
     return filepath_movedsurface,nodes_moved_dict,surfacetriangles_moved,mesh
 
 def GUI_setting():
