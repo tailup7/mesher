@@ -29,102 +29,33 @@ def select_stl():
     )
     return file_path
 
-def read_txt_centerline(filepath):
-    if not os.path.isfile(filepath):
-            print(f"Error: '{filepath}' does not exist.")
-            sys.exit()
-    with open(filepath, 'r') as file:
-        lines = file.readlines()
-    valid_lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
-    nodes_centerline = []
-    index = 0
-    for line in lines:
-        line = line.strip()
-        if line and not line.startswith('#'): 
-            parts = line.split() 
-            x, y, z = float(parts[0]), float(parts[1]), float(parts[2])
-            node_centerline = node.NodeCenterline(index, x, y, z)
-            nodes_centerline.append(node_centerline)
-            if index == 0:
-                config.inlet_point = node_centerline
-            elif index == len(valid_lines)-1:
-                config.outlet_point = node_centerline
-            index += 1
-    config.num_of_centerlinenodes = index
-    return nodes_centerline
-
-def read_csv_original(filepath):
-    df=pd.read_csv(filepath)
+# todo: original と targetで中心線の点数が違う時にerror出すように
+def read_csv_centerline(filepath):
+    df = pd.read_csv(filepath)
     nodes_centerline = [node.NodeCenterline(index, row['x'], row['y'], row['z']) for index, row in df.iterrows()]
     config.inlet_point = nodes_centerline[0]
     config.outlet_point = nodes_centerline[-1]
     config.num_of_centerlinenodes = len(nodes_centerline)
-    return nodes_centerline
 
-def read_csv_target(filepath):
-    df = pd.read_csv(filepath)
-    nodes_targetcenterline = [node.NodeTargetCenterline(index, row['x'], row['y'], row['z']) for index, row in df.iterrows()]
-    if len(nodes_targetcenterline) != config.num_of_centerlinenodes:
-        print("error : num of original centerline nodes is not match to target centerline nodes" )
-        sys.exit()
-    config.inlet_point = nodes_targetcenterline[0]
-    config.outlet_point = nodes_targetcenterline[-1]
-
+    # radius_listの総数を、【点群の数+1】 にする
     if "radius" in df.columns:
-        radius_list_target = df["radius"].tolist()
-        last_x = np.array([len(radius_list_target)-3, len(radius_list_target)-2, len(radius_list_target)-1])
-        last_y = radius_list_target[-3:]
-        p = Polynomial.fit(last_x, last_y, 1)
-        additional_radius = p(len(radius_list_target))
-        radius_list_target.append(additional_radius)
+        radius_list = df["radius"].tolist()
+        last_x = np.array([len(radius_list)-3, len(radius_list)-2, len(radius_list)-1])
+        last_y = radius_list[-3:]
+        polynominal_func = Polynomial.fit(last_x, last_y, 1)
+        additional_radius = polynominal_func(len(radius_list))
+        radius_list.append(additional_radius)
+        config.inlet_radius = radius_list[0]
+        config.outlet_radius = radius_list[-1]
     else:
-        radius_list_target = None
+        radius_list = None
+    return nodes_centerline, radius_list
 
-    return nodes_targetcenterline, radius_list_target
-
-
-def read_txt_targetcenterline(filepath):
-    if not os.path.isfile(filepath):
-            print(f"Error: '{filepath}' does not exist.")
-            sys.exit()
-    with open(filepath, 'r') as file:
-        lines = file.readlines()
-    valid_lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
-    nodes_targetcenterline = []
-    index = 0
-    for line in lines:
-        line = line.strip()
-        if line and not line.startswith('#'): 
-            parts = line.split() 
-            x, y, z = float(parts[0]), float(parts[1]), float(parts[2])
-            node_targetcenterline = node.NodeTargetCenterline(index, x, y, z)
-            nodes_targetcenterline.append(node_targetcenterline)
-            if index == 0:
-                config.inlet_point = node_targetcenterline
-            elif index == len(valid_lines)-1:
-                config.outlet_point = node_targetcenterline
-            index += 1
-    if index!=config.num_of_centerlinenodes:
-        print("error : num of original centerline nodes is not match to target centerline nodes" )
-        sys.exit()
-    return nodes_targetcenterline
-
-def read_txt_edgeradii(filepath):
-    with open(filepath, "r") as file:
-        lines=file.readlines()
-    num_of_edgeradii = float(lines[0].strip().lstrip("#").strip())
-    edgeradii = [float(line.strip()) for line in lines[1:]]
-    print("num_of_edgeradii=",num_of_edgeradii)
-    return edgeradii
-
-def write_txt_radius(radius_list):
-    os.makedirs("output",exist_ok = True)
-    filepath=os.path.join("output","radius.txt")
-    with open(filepath, 'w') as f:
-        f.write(f"# {len(radius_list)}\n")
-        for radius in radius_list:
-            f.write(f"{radius}\n")
-    print("Output radius.txt")
+def add_radiusinfo_to_centerlinefile(filepath_centerline, radius_list):
+    radius_list.pop()
+    df=pd.read_csv(filepath_centerline)
+    df["radius"] = radius_list
+    df.to_csv(filepath_centerline, index=False)
 
 def read_msh_tetra(filepath):
     tetra_list = []
@@ -163,7 +94,7 @@ def write_pos_bgm(tetra_list,nodeany_dict,filename):
     print(f"output bgm_{filename}.pos")
     return filepath
 
-def read_vtk_outersurface(filepath_vtk):
+def read_vtk_surfacemesh(filepath_vtk):
     with open(filepath_vtk, 'r') as file:
         lines = file.readlines()
     points_section = False
@@ -257,6 +188,8 @@ def write_stl_surfacetriangles(surfacetriangles,filename):
             f.write("  endfacet\n")
         f.write("endsolid model\n")
     return filepath
+
+
 
 def read_msh_innermesh(filepath,mesh):
     node_innermesh_dict={}

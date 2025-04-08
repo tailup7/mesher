@@ -65,3 +65,11 @@ class Prism:
         self.id3=id3
         self.id4=id4
         self.id5=id5
+
+def calc_cell_quality(node0, node1, node2):
+    vec1 = np.array([node1.x-node0.x, node1.y-node0.y, node1.z-node0.z])
+    vec2 = np.array([node2.x-node0.x, node2.y-node0.y, node2.z-node0.z])
+    lmax = max(np.linalg.norm(vec1),np.linalg.norm(vec2),np.linalg.norm(vec1-vec2))
+    area = 0.5*np.linalg.norm(np.cross(vec1, vec2))
+    cell_quality = lmax*(np.linalg.norm(vec1)+np.linalg.norm(vec2)+np.linalg.norm(vec1-vec2)) / (4*np.sqrt(3)*area)
+    return cell_quality

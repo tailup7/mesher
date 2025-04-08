@@ -1,3 +1,4 @@
+
 import config
 import numpy as np
 from scipy.spatial import KDTree
@@ -92,3 +93,17 @@ def calculate_nth_layer_thickratio(n):
     for i in range(n):
         total_thickratio += thickratio_each_layer[i]
     return total_thickratio
+
+# vmtk等で抽出した中心線は摂動を含むので、隣接7点の移動平均で平滑化する
+def moving_average_for_tangentvec(nodes_centerline):
+    tangentvec_smoothed_list = [0]*config.num_of_centerlinenodes
+    tangentvec_smoothed_list[0] = sum(node.tangentvec for node in nodes_centerline[:4]) / 4
+    tangentvec_smoothed_list[1] = sum(node.tangentvec for node in nodes_centerline[:5]) / 5
+    tangentvec_smoothed_list[2] = sum(node.tangentvec for node in nodes_centerline[:6]) / 6
+    tangentvec_smoothed_list[-1] = sum(node.tangentvec for node in nodes_centerline[-4:]) / 4
+    tangentvec_smoothed_list[-2] = sum(node.tangentvec for node in nodes_centerline[-5:]) / 5
+    tangentvec_smoothed_list[-3] = sum(node.tangentvec for node in nodes_centerline[-6:]) / 6
+    for i in range(3,config.num_of_centerlinenodes-3):
+        tangentvec_smoothed_list[i] = sum(node.tangentvec for node in nodes_centerline[i-3:i+4]) / 7
+    for i in range(config.num_of_centerlinenodes):
+        nodes_centerline[i].tangentvec = tangentvec_smoothed_list[i]

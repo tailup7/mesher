@@ -26,8 +26,7 @@ class NodeCenterline:
             self.tangentvec = np.array([nodes_centerline[self.id+1].x-nodes_centerline[self.id-1].x, 
                                         nodes_centerline[self.id+1].y-nodes_centerline[self.id-1].y, 
                                         nodes_centerline[self.id+1].z-nodes_centerline[self.id-1].z])/2
-            
-class NodeTargetCenterline(NodeCenterline):
+
     def calc_parallel_vec(self,nodes_centerline):
         self.parallel_vec  =  np.array([self.x-nodes_centerline[self.id].x,
                                         self.y-nodes_centerline[self.id].y,

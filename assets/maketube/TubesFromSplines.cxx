@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <vtkActor.h>
-#include <vtkDoubleArray.h>
 #include <vtkNamedColors.h>
 #include <vtkNew.h>
 #include <vtkParametricFunctionSource.h>
@@ -22,19 +21,46 @@ int main(int, char* [])
 {
     vtkNew<vtkPoints> points;
 
-    // **直線のパラメータ**
-    int numPoints = 100;  // 中心線の点の数
-    double length = 100.0; // 直線の長さ
-    double radius = 5.0;   // デフォルトの半径
-    double zStep = length / (numPoints - 1); // z方向のステップサイズ
+    // **パラメータ設定**
+    int numStraightPoints = 20;  // 直線部分の点の数
+    int numCurvePoints = 100;    // 曲がり管の点の数
+    double R = 50.0;             // 曲率半径
+    double thetaMax = 90.0;       // 円弧の角度 (90°)
+    double thetaStep = thetaMax / (numCurvePoints - 1); // 角度のステップサイズ
+    double L = 50.0;             // 直線の長さ
 
-    // **直線の中心線を作成**
-    for (int i = 0; i < numPoints; ++i)
+    // **開始直線（円弧の接線方向に沿う）**
+    for (int i = 0; i < numStraightPoints; ++i)
     {
-        double x = 0.0;
-        double y = 0.0;
-        double z = i * zStep;
+        double x = -L + (L / (numStraightPoints - 1)) * i;
+        double y = R ;
+        double z = 0.0;
         points->InsertPoint(i, x, y, z);
+    }
+
+    // **円弧に沿った中心線を作成**
+    int startIndex = numStraightPoints;
+    for (int i = 0; i < numCurvePoints; ++i)
+    {
+        double theta = (thetaStep * i) * (M_PI / 180.0); // ラジアン変換
+        double x = R * sin(theta);
+        double y = R * cos(theta);
+        double z = 0.0;
+        points->InsertPoint(startIndex + i, x, y, z);
+    }
+
+    // **終了直線（円弧の接線方向に沿う）**
+    int endIndex = startIndex + numCurvePoints;
+    double thetaEnd = thetaMax * (M_PI / 180.0);
+    double dx = -sin(thetaEnd); // X成分
+    double dy = cos(thetaEnd);  // Y成分
+
+    for (int i = 0; i < numStraightPoints; ++i)
+    {
+        double x = R ;
+        double y = - (L / (numStraightPoints - 1)) * i ;
+        double z = 0.0;
+        points->InsertPoint(endIndex + i, x, y, z);
     }
 
     // **スプライン補間**
@@ -45,9 +71,10 @@ int main(int, char* [])
     functionSource->SetUResolution(10 * points->GetNumberOfPoints());
     functionSource->Update();
 
-    // === CSV 出力 ===
-    std::ofstream csvFile("helix_centerline.csv");
-    if (!csvFile) {
+    // === **CSV 出力（中心線）** ===
+    std::ofstream csvFile("bend_extended_centerline.csv");
+    if (!csvFile)
+    {
         std::cerr << "Error: Cannot open file for writing CSV." << std::endl;
         return EXIT_FAILURE;
     }
@@ -61,71 +88,35 @@ int main(int, char* [])
         csvFile << p[0] << "," << p[1] << "," << p[2] << "\n";
     }
     csvFile.close();
-    std::cout << "CSV file saved as 'helix_centerline.csv'" << std::endl;
-
-    // === **Z座標に基づいた半径変化（中央部に狭窄を作る）** ===
-    vtkNew<vtkDoubleArray> tubeRadius;
-    unsigned int n = functionSource->GetOutput()->GetNumberOfPoints();
-    tubeRadius->SetNumberOfTuples(n);
-    tubeRadius->SetName("TubeRadius");
-
-    double zMin = 0.0;      // 直線の下端
-    double zMax = length;   // 直線の上端
-    double narrowCenter = 50.0;  // 狭窄の中心 (Z=50)
-    double narrowWidth = 20.0;   // 狭窄の幅（±5）
-
-    for (unsigned int i = 0; i < n; ++i)
-    {
-        double p[3];
-        tubePolyData->GetPoint(i, p);
-        double z = p[2];  // Z座標
-
-        double r = 5.0; // デフォルトの半径
-
-        // **中央付近（Z=50±5）のみ半径を5次関数で変化**
-        if (z >= (narrowCenter - narrowWidth / 2) && z <= (narrowCenter + narrowWidth / 2))
-        {
-            double t = (z - (narrowCenter - narrowWidth / 2)) / narrowWidth; // 0.0〜1.0 の範囲
-            r = 5.0 - 48 * pow(t, 2) + 96 * pow(t, 3) - 48 * pow(t, 4);
-        }
-
-        tubeRadius->SetTuple1(i, r);
-    }
-
-    // **スカラー値を適用**
-    tubePolyData->GetPointData()->AddArray(tubeRadius);
-    tubePolyData->GetPointData()->SetActiveScalars("TubeRadius");
+    std::cout << "CSV file saved as 'bend_extended_centerline.csv'" << std::endl;
 
     // **チューブ形状を生成**
     vtkNew<vtkTubeFilter> tuber;
     tuber->SetInputData(tubePolyData);
     tuber->SetNumberOfSides(20);
+    tuber->SetRadius(5.0); // 半径固定
     tuber->SetVaryRadiusToVaryRadiusByAbsoluteScalar();
 
     // **STLファイルに書き出し**
     vtkNew<vtkSTLWriter> writer;
-    writer->SetFileName("helix_output_variable_radius.stl");
+    writer->SetFileName("bend_extended_output.stl");
     writer->SetInputConnection(tuber->GetOutputPort());
     writer->Write();
 
-    std::cout << "STL file saved as 'helix_output_variable_radius.stl'" << std::endl;
+    std::cout << "STL file saved as 'bend_extended_output.stl'" << std::endl;
 
-    //-------------- 可視化の設定 --------------
+    // **可視化**
     vtkNew<vtkPolyDataMapper> tubeMapper;
     tubeMapper->SetInputConnection(tuber->GetOutputPort());
-    tubeMapper->SetScalarRange(tubePolyData->GetScalarRange());
-
     vtkNew<vtkActor> tubeActor;
     tubeActor->SetMapper(tubeMapper);
-    tubeActor->GetProperty()->SetOpacity(0.6);
-
     vtkNew<vtkNamedColors> colors;
     vtkNew<vtkRenderer> renderer;
     renderer->UseHiddenLineRemovalOn();
     vtkNew<vtkRenderWindow> renderWindow;
     renderWindow->AddRenderer(renderer);
     renderWindow->SetSize(640, 480);
-    renderWindow->SetWindowName("Straight Tube with Variable Radius");
+    renderWindow->SetWindowName("Bend Tube with Extended Sections");
 
     vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
     renderWindowInteractor->SetRenderWindow(renderWindow);
@@ -137,6 +128,9 @@ int main(int, char* [])
 
     return EXIT_SUCCESS;
 }
+
+
+
 
 
 

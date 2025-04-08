@@ -10,7 +10,7 @@ import trimesh
 import utility
 import cell
 
-def calc_radius(filepath_stl,nodes_centerline):
+def calc_radius(filepath_stl, filepath_centerline, nodes_centerline):
     # 半径計算のため、読み込んだ表面形状を細かく再メッシュ
     if not gmsh.isInitialized():
         gmsh.initialize()
@@ -73,6 +73,24 @@ def calc_radius(filepath_stl,nodes_centerline):
     if radius_list[-1] < radius_list[-2]*0.7:
         radius_list[-1]=radius_list[-2]
 
+    # 応急処置的 (中心線点群の端がSTLの端面に届いていない場合)
+    if radius_list[0] < radius_list[4]*0.7:
+        radius_list[0] = radius_list[4]
+    if radius_list[-1] < radius_list[-5]*0.7:
+        radius_list[-1] = radius_list[-5]
+    if radius_list[1] < radius_list[5]*0.7:
+        radius_list[1] = radius_list[5]
+    if radius_list[-2] < radius_list[-6]*0.7:
+        radius_list[-2] = radius_list[-6]
+    if radius_list[2] < radius_list[6]*0.7:
+        radius_list[2] = radius_list[6]
+    if radius_list[-3] < radius_list[-7]*0.7:
+        radius_list[-3] = radius_list[-7]
+    if radius_list[3] < radius_list[7]*0.7:
+        radius_list[3] = radius_list[7]
+    if radius_list[-4] < radius_list[-8]*0.7:
+        radius_list[-4] = radius_list[-8]
+
     radius_list_smooth[0]=(radius_list[0]+radius_list[1])/2
     radius_list_smooth[-1]=(radius_list[-1]+radius_list[-2])/2
     for i in range(1,len(radius_list)-1):
@@ -80,10 +98,9 @@ def calc_radius(filepath_stl,nodes_centerline):
 
     config.inlet_radius = radius_list_smooth[0]
     config.outlet_radius = radius_list_smooth[-1]
-    myio.write_txt_radius(radius_list_smooth)
 
+    myio.add_radiusinfo_to_centerlinefile(filepath_centerline, radius_list_smooth)
     gmsh.finalize()
-
     return radius_list_smooth
 
 # generate background mesh
@@ -188,19 +205,19 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
     print(f"output surfacemesh_{filename}.vtk")
     print(f"output surfacemesh_{filename}.stl")
 
-    surfacenodes,surfacetriangles = myio.read_vtk_outersurface(vtk_file) 
+    surfacenodes,surfacetriangles = myio.read_vtk_surfacemesh(vtk_file) 
     surfacenode_dict={}
     for surfacenode in surfacenodes:
-        surfacenode.find_closest_centerlinenode(nodes_centerline)
-        surfacenode.find_projectable_centerlineedge(nodes_centerline)
-        surfacenode.set_edgeradius(radius_list)
+        surfacenode.find_closest_centerlinenode(nodes_centerline)        #
+        surfacenode.find_projectable_centerlineedge(nodes_centerline)    #
+        surfacenode.set_edgeradius(radius_list)                          #
         surfacenode_dict[surfacenode.id] = surfacenode
         mesh.nodes.append(surfacenode)
         mesh.num_of_nodes += 1
     for surfacetriangle in surfacetriangles:
-        surfacetriangle.calc_unitnormal(nodes_centerline)
-        surfacetriangle.calc_centroid()
-        surfacetriangle.find_closest_centerlinenode(nodes_centerline)
+        surfacetriangle.calc_unitnormal(nodes_centerline)                #
+        surfacetriangle.calc_centroid()                                  #
+        surfacetriangle.find_closest_centerlinenode(nodes_centerline)    #
         surfacetriangle.assign_correspondcenterlinenode_to_surfacenode()
         mesh.triangles_WALL.append(surfacetriangle)
         mesh.num_of_elements += 1
@@ -209,14 +226,14 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
     return surfacenode_dict, surfacenodes, surfacetriangles, mesh
 
 def make_prismlayer(surfacenode_dict,surfacetriangles,mesh):
+    print("start generating prism layer")
     # 内側 1 ~ n 層を作成
     for i in range(1,config.NUM_OF_LAYERS+1):
         mesh,layernode_dict=boundarylayer.make_nthlayer_surfacenode(i, surfacenode_dict, surfacetriangles, mesh)
         mesh=boundarylayer.make_nthlayer_prism(i,surfacetriangles,mesh)
         config.num_of_boundarylayernodes = mesh.num_of_nodes
-    print("generate prism layer")
-
-    return mesh, layernode_dict, surfacetriangles
+    print("finished generating prism layer")
+    return mesh, layernode_dict
 
 def make_tetramesh(nodes_centerline,layernode_dict,mesh,filename):
     filepath_stl_mostinner = myio.write_stl_innersurface(mesh,nodes_centerline,layernode_dict)
@@ -358,10 +375,14 @@ def naming_inlet_outlet(mesh,nodes_centerline):
     return mesh
 
 def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,surfacenodes,surfacetriangles,mesh):
-    print("now deforming surface mesh")
+    print("start deforming surface mesh")
     for i in range(config.num_of_centerlinenodes):
         nodes_centerline[i].calc_tangentvec(nodes_centerline)
         nodes_targetcenterline[i].calc_tangentvec(nodes_targetcenterline)
+        
+    utility.moving_average_for_tangentvec(nodes_centerline)
+    utility.moving_average_for_tangentvec(nodes_targetcenterline)
+    for i in range(config.num_of_centerlinenodes):
         nodes_targetcenterline[i].calc_parallel_vec(nodes_centerline)
         nodes_targetcenterline[i].calc_rotation_matrix(nodes_centerline)
     # 移動後の表面を作成
@@ -406,7 +427,7 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline)
         surfacetriangle_moved.calc_centroid()
         surfacetriangle_moved.find_closest_centerlinenode(nodes_targetcenterline)
-        surfacetriangle_moved.assign_correspondcenterlinenode_to_surfacenode()
+        # surfacetriangle_moved.assign_correspondcenterlinenode_to_surfacenode()  # これ必要ある??? ← 一旦消して試す
         surfacetriangles_moved.append(surfacetriangle_moved)
         mesh.triangles_WALL.append(surfacetriangle_moved)
         mesh.num_of_elements += 1
