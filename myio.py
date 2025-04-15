@@ -99,6 +99,7 @@ def read_vtk_surfacemesh(filepath_vtk):
         lines = file.readlines()
     points_section = False
     cells_section = False
+
     for line in lines:
         line = line.strip()
         if line.startswith("POINTS"):
@@ -113,8 +114,9 @@ def read_vtk_surfacemesh(filepath_vtk):
             triangle_id=1   
             surfacetriangles = []
             continue
+
         if points_section:
-            if not line:
+            if not line: # 「行が空なら」
                 points_section = False
                 continue
             coords = list(map(float, line.split()))
@@ -126,7 +128,7 @@ def read_vtk_surfacemesh(filepath_vtk):
             surfacenodes.append(surfacenode)
             node_id+=1
         if cells_section:
-            if not line:
+            if not line: # 「行が空なら」
                 cells_section = False
                 continue
             cell_data = list(map(int, line.split()))
@@ -141,7 +143,57 @@ def read_vtk_surfacemesh(filepath_vtk):
     print("info_myio    : num of outersurface triangles is ",triangle_id-1)
     config.num_of_surfacenodes=node_id-1
     config.num_of_surfacetriangles = triangle_id-1
+    
     return surfacenodes,surfacetriangles
+
+def add_scalarinfo_to_surfacemesh_original_vtkfile(filepath_vtk,surfacetriangles):
+    with open(filepath_vtk, "r") as f:
+        lines = f.readlines()
+
+    cell_types_section = False
+    cell_types_list = []
+    insert_index = None
+
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if line.startswith("CELL_TYPES"):
+            cell_types_section = True
+            num_cell_types = int(line.split()[1])
+            continue
+
+        if cell_types_section:
+            if not line:
+                cell_types_section = False
+                insert_index = i  
+                continue
+            try:
+                val = int(line)
+                cell_types_list.append(val)
+            except ValueError:
+                continue
+
+    if insert_index is None:
+        insert_index = len(lines)
+    scalar_values = []
+    i_list = 0
+    for ct in cell_types_list:
+        if ct == 5:
+            scalar_values.append(surfacetriangles[i_list].correspond_centerlinenode.id)
+            i_list += 1
+        else:
+            scalar_values.append(0.0)
+
+    # CELL_DATA セクションの生成
+    cell_data_block = [
+        f"\nCELL_DATA {len(cell_types_list)}\n",
+        f"SCALARS ccnID float 1\n",
+        "LOOKUP_TABLE default\n"
+    ] + [f"{val}\n" for val in scalar_values]
+
+    output_path = os.path.join("output", "surfacemesh_original_with_ccnID.vtk")
+    new_lines = lines[:insert_index] + cell_data_block + lines[insert_index:]
+    with open(output_path, "w") as f:
+        f.writelines(new_lines)
 
 def write_stl_innersurface(mesh,nodes_centerline,layernode_dict):
     filename = "innersurface_" + str(config.NUM_OF_LAYERS) + ".stl"

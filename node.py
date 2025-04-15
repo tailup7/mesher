@@ -165,7 +165,6 @@ class NodeMoved(NodeAny):
                 self.y += deform_vector[1]
                 self.z += deform_vector[2]
 
-
 # gmsh.model.mesh.getNodes() の1つめの返り値は、得られた全Nodeのid のリスト。
 # 2つめの返り値は、得られる全Nodeのx,y,z座標成分をまとめたリスト。これらをnodeごとの情報に整理する
 def coords_to_nodes(nodeids, coords):

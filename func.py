@@ -222,6 +222,7 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
         mesh.triangles_WALL.append(surfacetriangle)
         mesh.num_of_elements += 1
 
+    myio.add_scalarinfo_to_surfacemesh_original_vtkfile(vtk_file,surfacetriangles)
     gmsh.finalize()
     return surfacenode_dict, surfacenodes, surfacetriangles, mesh
 
@@ -392,7 +393,7 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         surfacenode_moved=node.NodeMoved(surfacenode.id,0,0,0)
         countor=0
         for correspond_centerlinenode in surfacenode.correspond_centerlinenodes:
-            surfacenode_moved.x += correspond_centerlinenode.x
+            surfacenode_moved.x += correspond_centerlinenode.x # 複数のcorrespond_centerlinenode がある場合、起点が複数になってしまう。
             surfacenode_moved.y += correspond_centerlinenode.y
             surfacenode_moved.z += correspond_centerlinenode.z
             localvec = utility.vector(surfacenode)-utility.vector(correspond_centerlinenode)
@@ -405,7 +406,6 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         surfacenode_moved.x = surfacenode_moved.x/countor
         surfacenode_moved.y = surfacenode_moved.y/countor
         surfacenode_moved.z = surfacenode_moved.z/countor
-
 
         surfacenode_moved.find_closest_centerlinenode(nodes_targetcenterline)
         if radius_list_target != None:

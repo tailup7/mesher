@@ -72,7 +72,7 @@ def deform():
                                                                                                         surfacenodes,
                                                                                                         surfacetriangles,mesh_deform)
     if radius_list_target == None:
-        radius_for_bgm = func.calc_radius(filepath_movedsurface,nodes_targetcenterline)
+        radius_for_bgm = func.calc_radius(filepath_movedsurface,filepath_target,nodes_targetcenterline)
         for i in range(1,config.num_of_surfacenodes+1):
             nodes_moved_dict[i].find_projectable_centerlineedge(nodes_targetcenterline)
             nodes_moved_dict[i].set_edgeradius(radius_for_bgm)
