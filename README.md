@@ -4,11 +4,14 @@
 </p>
 
 ## Overview
-Code that reads in tube shape and generates a tetra-prism hybrid mesh. Output file can be used for CFD.  
-The mesh size is automatically adjusted even if there are areas where the tube diameter is extraordinary smaller or larger, which would normally require regionalization. <br>
-Thickness of boundary layer (=prism) cell is also adjusted as figure below. <br>
-The background mesh function of gmsh is used to control the mesh size ( https://gmsh.info/doc/texinfo/gmsh.html#t7 ). <br>
-The output mesh file can be deformed as shown below.
+This is code that automatically generates a tetra-prism hybrid mesh (* .msh) from tube shape (* .stl) by using Gmsh python API. The features are as follows. 
++ Output mesh data can be used for CFD.  
++ The mesh size is automatically adjusted even if there are areas where the tube diameter is extraordinary smaller or larger, which would normally require regionalization for meshing. <br>
+( In this code, background mesh function of Gmsh is used to control the mesh size ( https://gmsh.info/doc/texinfo/gmsh.html#t7 ). )
++ Thickness of boundary layer (= prism cells) is also adjusted as figure below. <br>
++ Output mesh model can be deformed as shown below. <br>
+
+
 
 <p align="left">
   <img src="https://github.com/tailup7/mesher/blob/main/picture/000.png" alt="meshing" width="600"/>
