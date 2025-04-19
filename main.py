@@ -8,34 +8,32 @@ import myio
 import config
 import meshinfo
 
-did_meshing=False
-nodes_centerline = None
+did_meshing      = False
 surfacenodes     = None 
 surfacetriangles = None
 
 def input_meshing_parameter():
-    print("---mesh parameter---")
-    print("MESHSIZE_SCALING_FACTOR",config.SCALING_FACTOR)
-    print("FIRST_LAYER_RATIO : ",config.FIRST_LAYER_RATIO)
-    print("GROWTH_RATE : ",config.GROWTH_RATE)
-    print("NUM_OF_LAYERS",config.NUM_OF_LAYERS)
+    print("------- mesh parameter -------")
+    print("MESHSIZE_SCALING_FACTOR :", config.SCALING_FACTOR)
+    print("FIRST_LAYER_RATIO       :", config.FIRST_LAYER_RATIO)
+    print("GROWTH_RATE             :", config.GROWTH_RATE)
+    print("NUM_OF_LAYERS           :", config.NUM_OF_LAYERS)
     change = input("Change parameters? (y/n): ").strip().lower()
     if change == "y":
         try:
-            config.SCALING_FACTOR = float(input("Enter MESHSIZE_SCALING_FACOTOR: "))
+            config.SCALING_FACTOR    = float(input("Enter MESHSIZE_SCALING_FACOTOR: "))
             config.FIRST_LAYER_RATIO = float(input("Enter FIRST_LAYER_RATIO: "))
-            config.GROWTH_RATE = float(input("Enter GROWTH_RATE: "))
-            config.NUM_OF_LAYERS = int(input("Enter NUM_OF_LAYERS: "))
+            config.GROWTH_RATE       = float(input("Enter GROWTH_RATE: "))
+            config.NUM_OF_LAYERS     = int(input("Enter NUM_OF_LAYERS: "))
         except ValueError:
             print("Invalid input. Using default values.")
 
 def meshing():
     start=time.time()
-    global nodes_centerline
     global surfacenodes
     global surfacetriangles
     mesh = meshinfo.Mesh() 
-    filepath_centerline = myio.select_csv()
+    filepath_centerline = myio.select_csv("original")
     filepath_stl = myio.select_stl()
     nodes_centerline, radius_list = myio.read_csv_centerline(filepath_centerline)
     if radius_list == None:
@@ -53,6 +51,7 @@ def meshing():
     func.GUI_setting()
     gmsh.fltk.run()
     gmsh.finalize()
+    myio.write_txt_parameter()
     elapsed_time=end-start
     print("-------- Finished Make Mesh --------")
     print(f"elapsed time : {elapsed_time:.4f} s")
@@ -60,25 +59,26 @@ def meshing():
 def deform():
     start=time.time()
     print("-------- Start Deform Mesh --------")
-    filepath_target = myio.select_csv()
+    filepath_original = myio.select_csv("original")
+    filepath_target = myio.select_csv("target")
     mesh_deform = meshinfo.Mesh()
-    global nodes_centerline
     global surfacenodes
     global surfacetriangles
+    nodes_centerline, radius_list_original = myio.read_csv_centerline(filepath_original)
     nodes_targetcenterline, radius_list_target = myio.read_csv_centerline(filepath_target)
-    filepath_movedsurface, nodes_moved_dict, surfacetriangles_moved, mesh_deform = func.deform_surface(nodes_targetcenterline,  
+    filepath_surfacemesh_deformed, nodes_moved_dict, surfacetriangles_moved, mesh_deform = func.deform_surface(nodes_targetcenterline,  
                                                                                                         radius_list_target,
                                                                                                         nodes_centerline,
                                                                                                         surfacenodes,
                                                                                                         surfacetriangles,mesh_deform)
     if radius_list_target == None:
-        radius_for_bgm = func.calc_radius(filepath_movedsurface,filepath_target,nodes_targetcenterline)
+        radius_for_bgm = func.calc_radius(filepath_surfacemesh_deformed,filepath_target,nodes_targetcenterline)
         for i in range(1,config.num_of_surfacenodes+1):
             nodes_moved_dict[i].find_projectable_centerlineedge(nodes_targetcenterline)
             nodes_moved_dict[i].set_edgeradius(radius_for_bgm)
     else:
         radius_for_bgm = radius_list_target
-    func.generate_pos_bgm(filepath_movedsurface,nodes_targetcenterline, radius_for_bgm,"deform")
+    func.generate_pos_bgm(filepath_surfacemesh_deformed,nodes_targetcenterline, radius_for_bgm,"deform")
     mesh_deform, layernode_dict = func.make_prismlayer(nodes_moved_dict,surfacetriangles_moved,mesh_deform)
     mesh_deform = func.make_tetramesh(nodes_targetcenterline,layernode_dict,mesh_deform,"deform")
     mesh_deform=func.naming_inlet_outlet(mesh_deform,nodes_targetcenterline)

@@ -11,11 +11,11 @@ from numpy.polynomial.polynomial import Polynomial
 import tkinter as tk
 from tkinter import filedialog
 
-def select_csv():
+def select_csv(message):
     root = tk.Tk()
     root.withdraw()  
     file_path = filedialog.askopenfilename(
-        title="Select centerline file",
+        title=f"Select {message} centerline file (*.csv)",
         filetypes=[("CSV files", "*.csv")]  
     )
     return file_path
@@ -29,6 +29,19 @@ def select_stl():
     )
     return file_path
 
+def write_txt_parameter():
+    if not os.path.exists("output"):
+        os.makedirs("output")
+    filepath = os.path.join("output", "memo.txt")
+    memo=f"""num of centerlinenodes  : {config.num_of_centerlinenodes} 
+MESHSIZE                : {config.MESHSIZE}
+MESHSIZE_SCALING_FACTOR : {config.SCALING_FACTOR}
+FIRST_LAYER_RATIO       : {config.FIRST_LAYER_RATIO}
+GROWTH_RATE             : {config.GROWTH_RATE}
+NUM_OF_LAYERS           : {config.NUM_OF_LAYERS}"""
+    with open(filepath, "w") as f:
+        f.write(memo)
+    
 # todo: original と targetで中心線の点数が違う時にerror出すように
 def read_csv_centerline(filepath):
     df = pd.read_csv(filepath)
@@ -241,7 +254,32 @@ def write_stl_surfacetriangles(surfacetriangles,filename):
         f.write("endsolid model\n")
     return filepath
 
-
+def write_vtk_surfacemesh_with_ccnID(surfacenodes,surfacetriangles):
+    filepath=os.path.join("output","surfacemesh_deformed_with_ccnID.vtk")
+    point_header=f"""# vtk DataFile Version 2.0
+WALL_0, Created by Gmsh 4.11.1 
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS {len(surfacenodes)} double\n"""
+    cell_header=f"""CELLS {len(surfacetriangles)} {4*len(surfacetriangles)}\n"""
+    celltypes_header = f"""CELL_TYPES {len(surfacetriangles)}\n"""
+    celldata_header=f"""CELL_DATA {len(surfacetriangles)}
+SCALARS ccnID float 1
+LOOKUP_TABLE default\n"""
+    
+    with open(filepath, "w") as f:
+        f.write(point_header)
+        for pt in surfacenodes:
+            f.write(f"{pt.x} {pt.y} {pt.z}\n")
+        f.write(cell_header)
+        for tri in surfacetriangles:
+            f.write(f"3 {tri.node0.id-1} {tri.node1.id-1} {tri.node2.id-1}\n")
+        f.write(celltypes_header)
+        for tri in surfacetriangles:
+            f.write("5\n")
+        f.write(celldata_header)
+        for tri in surfacetriangles:
+            f.write(f"{tri.correspond_centerlinenode.id-1}\n")
 
 def read_msh_innermesh(filepath,mesh):
     node_innermesh_dict={}

@@ -204,8 +204,9 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
     gmsh.write(stl_file)
     print(f"output surfacemesh_{filename}.vtk")
     print(f"output surfacemesh_{filename}.stl")
-
-    surfacenodes,surfacetriangles = myio.read_vtk_surfacemesh(vtk_file) 
+    
+    surfacenodes,surfacetriangles = myio.read_vtk_surfacemesh(vtk_file)
+    print("info_func    : start corresponding surface mesh triangles to centerline nodes") 
     surfacenode_dict={}
     for surfacenode in surfacenodes:
         surfacenode.find_closest_centerlinenode(nodes_centerline)        #
@@ -223,6 +224,8 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
         mesh.num_of_elements += 1
 
     myio.add_scalarinfo_to_surfacemesh_original_vtkfile(vtk_file,surfacetriangles)
+    print("info_func    : finish corresponding surface mesh triangles to centerline nodes")
+    print("info_myio    : output surfacemesh_original_with_ccnID.vtk.")
     gmsh.finalize()
     return surfacenode_dict, surfacenodes, surfacetriangles, mesh
 
@@ -425,16 +428,19 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         node2=nodes_moved_dict[surfacetriangle.node2.id]
         surfacetriangle_moved=cell.Triangle(surfacetriangle.id,node0,node1,node2)
         surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline)
-        surfacetriangle_moved.calc_centroid()
-        surfacetriangle_moved.find_closest_centerlinenode(nodes_targetcenterline)
+        # surfacetriangle_moved.calc_centroid()
+        # surfacetriangle_moved.find_closest_centerlinenode(nodes_targetcenterline) # これも必要ない気がする(とすると1行上も必要ない..?)
+        surfacetriangle_moved.correspond_centerlinenode = surfacetriangle.correspond_centerlinenode # 1行上の代わりにこれを追加して情報を書き換えてみた
         # surfacetriangle_moved.assign_correspondcenterlinenode_to_surfacenode()  # これ必要ある??? ← 一旦消して試す
         surfacetriangles_moved.append(surfacetriangle_moved)
         mesh.triangles_WALL.append(surfacetriangle_moved)
         mesh.num_of_elements += 1
 
-    filepath_movedsurface = myio.write_stl_surfacetriangles(surfacetriangles_moved,"movedsurface.stl")
-    print("finished deforming surface mesh. output movedsurface.stl")
-    return filepath_movedsurface,nodes_moved_dict,surfacetriangles_moved,mesh
+    filepath_surfacemesh_deformed = myio.write_stl_surfacetriangles(surfacetriangles_moved,"surfacemesh_deformed.stl")
+    print("finished deforming surface mesh. output surfacemesh_deformed.stl")
+    myio.write_vtk_surfacemesh_with_ccnID(surfacenodes_moved,surfacetriangles_moved)
+    print("output surfacemesh_deformed_with_ccnID.vtk")
+    return filepath_surfacemesh_deformed,nodes_moved_dict,surfacetriangles_moved,mesh
 
 def GUI_setting():
     gmsh.option.setNumber("Mesh.SurfaceFaces", 1)

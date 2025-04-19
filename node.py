@@ -56,8 +56,6 @@ class NodeCenterline:
 
         self.rotation_matrix = np.cos(theta)*identity_matrix + np.sin(theta)*matrix1 + (1-np.cos(theta))*matrix2
 
-
-
 class NodeAny:
     def __init__(self,id,x,y,z):
         self.id = id
