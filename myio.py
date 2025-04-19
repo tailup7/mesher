@@ -14,20 +14,29 @@ from tkinter import filedialog
 def select_csv(message):
     root = tk.Tk()
     root.withdraw()  
-    file_path = filedialog.askopenfilename(
+    filepath = filedialog.askopenfilename(
         title=f"Select {message} centerline file (*.csv)",
         filetypes=[("CSV files", "*.csv")]  
     )
-    return file_path
+    return filepath
 
 def select_stl():
     root = tk.Tk()
     root.withdraw()  
-    file_path = filedialog.askopenfilename(
+    filepath = filedialog.askopenfilename(
         title="Select surface file",
         filetypes=[("stl files", "*.stl")]  
     )
-    return file_path
+    return filepath
+
+def select_vtk():
+    root = tk.Tk()
+    root.withdraw()  
+    filepath = filedialog.askopenfilename(
+        title="Select surface vtk file",
+        filetypes=[("vtk files", "*.vtk")]  
+    )
+    return filepath
 
 def write_txt_parameter():
     if not os.path.exists("output"):
@@ -159,6 +168,61 @@ def read_vtk_surfacemesh(filepath_vtk):
     
     return surfacenodes,surfacetriangles
 
+def read_vtk_for_hausdorff(filepath_vtk):
+    with open(filepath_vtk, 'r') as file:
+        lines = file.readlines()
+    points_section = False
+    cells_section = False
+
+    for line in lines:
+        line = line.strip()
+        if line.startswith("POINTS"):
+            points_section = True
+            node_id=1
+            surfacenode_dict = {}
+            surfacenodes = []
+            continue
+        if line.startswith("CELLS"):
+            points_section = False
+            cells_section = True
+            triangle_id=1
+            surfacetriangle_dict={}   
+            surfacetriangles = []
+            continue
+
+        if points_section:
+            if not line: # 「行が空なら」
+                points_section = False
+                continue
+            coords = list(map(float, line.split()))
+            x=coords[0]
+            y=coords[1]
+            z=coords[2]
+            surfacenode=node.NodeForHausdorff(node_id,x,y,z)
+            surfacenode_dict[node_id]= surfacenode
+            surfacenodes.append(surfacenode)
+            node_id+=1
+        if cells_section:
+            if line.startswith("CELL_TYPES") or line.startswith("POINT_DATA") or line.startswith("CELL_DATA"):
+                cells_section = False
+                continue
+            if not line: # 「行が空なら」
+                cells_section = False
+                continue
+            cell_data = list(map(int, line.split()))
+            if cell_data[0] == 3:
+                node0 = surfacenode_dict[cell_data[1]+1]
+                node1 = surfacenode_dict[cell_data[2]+1]
+                node2 = surfacenode_dict[cell_data[3]+1]
+                surfacetriangle = cell.Triangle(triangle_id, node0, node1, node2)
+                surfacetriangle_dict[triangle_id]=surfacetriangle
+                surfacetriangles.append(surfacetriangle)
+                surfacenode_dict[cell_data[1]+1].append(triangle_id)
+                surfacenode_dict[cell_data[2]+1].append(triangle_id)
+                surfacenode_dict[cell_data[3]+1].append(triangle_id)
+                triangle_id += 1
+    return surfacenodes,surfacenode_dict,surfacetriangles,surfacetriangle_dict
+
 def add_scalarinfo_to_surfacemesh_original_vtkfile(filepath_vtk,surfacetriangles):
     with open(filepath_vtk, "r") as f:
         lines = f.readlines()
@@ -280,6 +344,31 @@ LOOKUP_TABLE default\n"""
         f.write(celldata_header)
         for tri in surfacetriangles:
             f.write(f"{tri.correspond_centerlinenode.id-1}\n")
+
+def write_vtk_hausdorff(surfacenodes,haus):
+    if not os.path.exists("output"):
+        os.makedirs("output")
+    filepath=os.path.join("output","hausdorff.vtk")
+    point_header=f"""# vtk DataFile Version 2.0
+HEADER
+ASCII
+DATASET POLYDATA
+POINTS {len(surfacenodes)} float\n"""
+    polygons_header=f"""POLYGONS {len(surfacenodes)} {2*len(surfacenodes)}\n"""
+    celldata_header=f"""CELL_DATA {len(surfacenodes)}
+FIELD FieldData 1
+haus 1 {len(surfacenodes)} float\n"""
+    
+    with open(filepath, "w") as f:
+        f.write(point_header)
+        for pt in surfacenodes:
+            f.write(f"{pt.x} {pt.y} {pt.z}\n")
+        f.write(polygons_header)
+        for i in range(len(surfacenodes)):
+            f.write(f"1 {i}\n")
+        f.write(celldata_header)
+        for i in range(len(surfacenodes)):
+            f.write(f"{haus[i]}\n")
 
 def read_msh_innermesh(filepath,mesh):
     node_innermesh_dict={}
