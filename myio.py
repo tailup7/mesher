@@ -544,21 +544,21 @@ def write_msh_allmesh(mesh,filename):
         f.write(f"{mesh.num_of_elements}\n")
         elements_countor=0
         for triangle in mesh.triangles_WALL:
-            f.write(f"{triangle.id} 2 2 10 1 {triangle.node0.id} {triangle.node1.id} {triangle.node2.id}\n")
+            f.write(f"{triangle.id} 2 2 10 10 {triangle.node0.id} {triangle.node1.id} {triangle.node2.id}\n")
             elements_countor+=1
 
         for triangle in mesh.triangles_INLET:
             elements_countor+=1
-            f.write(f"{elements_countor} 2 2 20 1 {triangle.node0.id} {triangle.node1.id} {triangle.node2.id}\n")
+            f.write(f"{elements_countor} 2 2 20 11 {triangle.node0.id} {triangle.node1.id} {triangle.node2.id}\n")
         for triangle in mesh.triangles_OUTLET:
             elements_countor+=1
-            f.write(f"{elements_countor} 2 2 30 1 {triangle.node0.id} {triangle.node1.id} {triangle.node2.id}\n")
+            f.write(f"{elements_countor} 2 2 30 13 {triangle.node0.id} {triangle.node1.id} {triangle.node2.id}\n")
         for quad in mesh.quadrangles_INLET:
             elements_countor+=1
-            f.write(f"{elements_countor} 3 2 20 1 {quad.id0} {quad.id1} {quad.id2} {quad.id3}\n")
+            f.write(f"{elements_countor} 3 2 20 12 {quad.id0} {quad.id1} {quad.id2} {quad.id3}\n")
         for quad in mesh.quadrangles_OUTLET:
             elements_countor+=1
-            f.write(f"{elements_countor} 3 2 30 1 {quad.id0} {quad.id1} {quad.id2} {quad.id3}\n")
+            f.write(f"{elements_countor} 3 2 30 14 {quad.id0} {quad.id1} {quad.id2} {quad.id3}\n")
         for tetra in mesh.tetras_INTERNAL:
             elements_countor+=1
             f.write(f"{elements_countor} 4 2 100 1 {tetra.id0} {tetra.id1} {tetra.id2} {tetra.id3}\n")

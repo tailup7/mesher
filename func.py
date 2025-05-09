@@ -428,10 +428,7 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         node2=nodes_moved_dict[surfacetriangle.node2.id]
         surfacetriangle_moved=cell.Triangle(surfacetriangle.id,node0,node1,node2)
         surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline)
-        # surfacetriangle_moved.calc_centroid()
-        # surfacetriangle_moved.find_closest_centerlinenode(nodes_targetcenterline) # これも必要ない気がする(とすると1行上も必要ない..?)
-        surfacetriangle_moved.correspond_centerlinenode = surfacetriangle.correspond_centerlinenode # 1行上の代わりにこれを追加して情報を書き換えてみた
-        # surfacetriangle_moved.assign_correspondcenterlinenode_to_surfacenode()  # これ必要ある??? ← 一旦消して試す
+        surfacetriangle_moved.correspond_centerlinenode = surfacetriangle.correspond_centerlinenode 
         surfacetriangles_moved.append(surfacetriangle_moved)
         mesh.triangles_WALL.append(surfacetriangle_moved)
         mesh.num_of_elements += 1
@@ -454,3 +451,8 @@ def GUI_setting():
     gmsh.option.setNumber("General.RotationY", 0)
     gmsh.option.setNumber("General.RotationZ", 0)
     gmsh.option.setNumber("General.Terminal", 1)
+    gmsh.model.setColor([(2, 10)], 160,  32, 240) # purple   wall
+    gmsh.model.setColor([(2, 11)], 155, 188,   0) # yellow   inlet  tri
+    gmsh.model.setColor([(2, 12)], 255,   0,   0) # red      inlet  quad
+    gmsh.model.setColor([(2, 13)],  89, 245, 250) # skyblue  outlet tri
+    gmsh.model.setColor([(2, 14)],   0,   0, 255) # blue     outlet quad
