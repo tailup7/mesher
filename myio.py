@@ -13,29 +13,38 @@ from tkinter import filedialog
 
 def select_csv(message):
     root = tk.Tk()
-    root.withdraw()  
-    filepath = filedialog.askopenfilename(
-        title=f"Select {message} centerline file (*.csv)",
-        filetypes=[("CSV files", "*.csv")]  
+    root.withdraw() 
+    root.attributes("-topmost", True)
+    filepath  = filedialog.askopenfilename(
+        title     = f"Select {message} centerline file (*.csv)",
+        filetypes = [("CSV files", "*.csv")], 
+        parent    = root
     )
+    root.destroy()
     return filepath
 
 def select_stl():
     root = tk.Tk()
-    root.withdraw()  
+    root.withdraw()
+    root.attributes("-topmost", True)  
     filepath = filedialog.askopenfilename(
-        title="Select surface file",
-        filetypes=[("stl files", "*.stl")]  
+        title     = "Select surface file",
+        filetypes = [("stl files", "*.stl")],  
+        parent    = root
     )
+    root.destroy()
     return filepath
 
 def select_vtk():
     root = tk.Tk()
-    root.withdraw()  
+    root.withdraw()
+    root.attributes("-topmost", True)  
     filepath = filedialog.askopenfilename(
-        title="Select surface vtk file",
-        filetypes=[("vtk files", "*.vtk")]  
+        title     = "Select surface vtk file",
+        filetypes = [("vtk files", "*.vtk")],
+        parent    = root  
     )
+    root.destroy()
     return filepath
 
 def write_txt_parameter():
