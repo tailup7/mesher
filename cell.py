@@ -6,6 +6,7 @@ class Triangle:
         self.node0=node0
         self.node1=node1
         self.node2=node2
+        self.already_swaped = False # TODO : 継承で surfacetriangle_moved は別のクラスとして定義したい
 
     def calc_unitnormal(self, nodes_centerline):
         vector0=np.array([self.node1.x-self.node0.x, self.node1.y-self.node0.y, self.node1.z-self.node0.z])
