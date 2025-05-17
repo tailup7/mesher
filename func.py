@@ -2,6 +2,7 @@ import config
 import node
 import myio
 import boundarylayer
+import edgeswap
 import gmsh
 import os
 import numpy as np
@@ -122,12 +123,14 @@ def calc_radius(filepath_stl, filepath_centerline, nodes_centerline):
     return radius_list_smooth
 
 # generate background mesh
-def generate_pos_bgm(filepath, nodes_centerline,radius_list,filename):
+def generate_pos_bgm(filepath, nodes_centerline,radius_list,filename, classify_parameter):
     if not gmsh.isInitialized():
         gmsh.initialize()
     gmsh.merge(filepath)  
     print("filepath of input stl at generate_pos_bgm :",filepath)
-    gmsh.model.mesh.classifySurfaces(angle = 40 * np.pi / 180, boundary=True, forReparametrization=True)
+    # ここのclassifySurface関数の1つ目の引数が 通常の感覚と逆なので注意。値が大きいほど、判定が厳しくなる。
+    # classify_parameter の値を小さく設定するほど、三角形パッチの法線同士の成す角が大きくても、連続する面とみなす。
+    gmsh.model.mesh.classifySurfaces(angle = classify_parameter * np.pi / 180, boundary=True, forReparametrization=True)
     gmsh.model.mesh.createGeometry()
     gmsh.model.geo.synchronize()
     # メッシュオプション
@@ -396,7 +399,7 @@ def naming_inlet_outlet(mesh,nodes_centerline):
     print("naming INLET OUTLET to quadrangles on surface.")
     return mesh
 
-def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,surfacenodes,surfacetriangles,mesh):
+def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,surfacenodes,surfacetriangles,mesh, do_edgeswap):
     print("start deforming surface mesh")
     for i in range(config.num_of_centerlinenodes):
         nodes_centerline[i].calc_tangentvec(nodes_centerline)
@@ -441,147 +444,22 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
 
     surfacetriangles_moved=[]
     surfacetriangle_moved_dict = {}   ### edgeswapのための変数を追加
-    pair_dict=PairDict()              ### edgeswapのための変数を追加
+    
     for surfacetriangle in surfacetriangles:
         node0 = nodes_moved_dict[surfacetriangle.node0.id]
         node1 = nodes_moved_dict[surfacetriangle.node1.id]
         node2 = nodes_moved_dict[surfacetriangle.node2.id]
         surfacetriangle_moved = cell.Triangle(surfacetriangle.id,node0,node1,node2)
-        surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline) # if np.dot(surfacetri... の判定で使用。またswapした後にも再計算
+        surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline) # edgeswap 関数内の if np.dot(surfacetri... の判定で使用。またswapした後にも再計算
         surfacetriangle_moved_dict[surfacetriangle.id] = surfacetriangle_moved
-        ##ここから、edgeswap用のコードを追加
-        ##########################################################
-        # node0 とnode1 に対して
-        if pair_dict.get_value(node0.id, node1.id) == None:
-            pair_dict.add_pair(node0.id, node1.id, surfacetriangle.id)
-        else:
-            pair_triangle = surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)]  
-            if pair_triangle.already_swaped == False and surfacetriangle_moved.already_swaped == False:
-                pair_triangle_nodeids =  {pair_triangle.node0.id, pair_triangle.node1.id, pair_triangle.node2.id}
-                pair_triangle_vertexid = next(iter(pair_triangle_nodeids-{node0.id, node1.id}))
-                if utility.can_P_project_to_AB(node2,node0,node1) and utility.can_P_project_to_AB(nodes_moved_dict[pair_triangle_vertexid],node0,node1):
-                    this_triangle_quality  = cell.calc_cell_quality(node0,node1,node2)
-                    pair_triangle_quality  = cell.calc_cell_quality(node0,node1,nodes_moved_dict[pair_triangle_vertexid])
-                    temp_triangle1_quality = cell.calc_cell_quality(node1,node2,nodes_moved_dict[pair_triangle_vertexid])
-                    temp_triangle2_quality = cell.calc_cell_quality(node0,node2,nodes_moved_dict[pair_triangle_vertexid])
-                    vec_temp1 = np.array([node1.x - node0.x, node1.y - node0.y, node1.z - node0.z])
-                    vec_temp2 = np.array([node2.x - node0.x, node2.y - node0.y, node2.z - node0.z])
-                    if ( min(this_triangle_quality, pair_triangle_quality) >= min(temp_triangle1_quality, temp_triangle2_quality) and 
-                            max(this_triangle_quality, pair_triangle_quality) >= max(temp_triangle1_quality, temp_triangle2_quality) ):
-                        # node0, node1, node2 が反時計回りに並んでいるか確証が持てないので、一応次のように場合分けして処理
-                        if np.dot(surfacetriangle_moved.unitnormal_out, np.cross(vec_temp1,vec_temp2)) >=0:
-                            # this_triangleの各nodeを再定義
-                            surfacetriangle_moved.node0 = node1
-                            surfacetriangle_moved.node1 = node2
-                            surfacetriangle_moved.node2 = nodes_moved_dict[pair_triangle_vertexid]
-                            # pair_triangleの各nodeを再定義
-                            surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].node0 = node0
-                            surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].node1 = nodes_moved_dict[pair_triangle_vertexid]
-                            surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].node2 = node2
-                        else:
-                            # this_triangleの各nodeを再定義
-                            surfacetriangle_moved.node1 = node2
-                            surfacetriangle_moved.node2 = nodes_moved_dict[pair_triangle_vertexid]
-                            # pair_triangleの各nodeを再定義
-                            surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].node0 = node1
-                            surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].node1 = nodes_moved_dict[pair_triangle_vertexid]
-                            surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].node2 = node2
-                        # swap後、法線ベクトルの再計算
-                        surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline)
-                        surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].calc_unitnormal(nodes_targetcenterline)
-                        # swap後、this triangleとpair triangle を swap済みにする
-                        surfacetriangle_moved.already_swaped = True
-                        surfacetriangle_moved_dict[pair_dict.get_value(node0.id,node1.id)].already_swaped = True
-                        config.edgeswap_count+=1
-                        print(f"do edgeswap at triangle {surfacetriangle.id}")
-
-        # node1 とnode2 に対して 
-        if pair_dict.get_value(node1.id, node2.id) == None:
-            pair_dict.add_pair(node1.id, node2.id, surfacetriangle.id)
-        else:
-            pair_triangle = surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)]  
-            if pair_triangle.already_swaped == False and surfacetriangle_moved.already_swaped == False:
-                pair_triangle_nodeids =  {pair_triangle.node0.id, pair_triangle.node1.id, pair_triangle.node2.id}
-                pair_triangle_vertexid = next(iter(pair_triangle_nodeids-{node1.id, node2.id}))
-                if utility.can_P_project_to_AB(node0,node1,node2) and utility.can_P_project_to_AB(nodes_moved_dict[pair_triangle_vertexid],node1,node2):
-                    this_triangle_quality  = cell.calc_cell_quality(node0,node1,node2) ###
-                    pair_triangle_quality  = cell.calc_cell_quality(node1,node2,nodes_moved_dict[pair_triangle_vertexid])
-                    temp_triangle1_quality = cell.calc_cell_quality(node0,node1,nodes_moved_dict[pair_triangle_vertexid])
-                    temp_triangle2_quality = cell.calc_cell_quality(node0,node2,nodes_moved_dict[pair_triangle_vertexid])
-                    vec_temp1 = np.array([node2.x-node1.x, node2.y-node1.y, node2.z-node1.z])
-                    vec_temp2 = np.array([node0.x - node1.x, node0.y - node1.y, node0.z - node1.z])
-                    if ( min(this_triangle_quality, pair_triangle_quality) >= min(temp_triangle1_quality, temp_triangle2_quality) and 
-                            max(this_triangle_quality, pair_triangle_quality) >= max(temp_triangle1_quality, temp_triangle2_quality) ):
-                        # node0, node1, node2 が反時計回りに並んでいるか確証が持てないので、一応次のように場合分けして処理
-                        if np.dot(surfacetriangle_moved.unitnormal_out, np.cross(vec_temp1,vec_temp2)) >=0:
-                            # this_triangleの各nodeを再定義
-                            surfacetriangle_moved.node1 = nodes_moved_dict[pair_triangle_vertexid]
-                            # pair_triangleの各nodeを再定義
-                            surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].node0 = node0
-                            surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].node1 = node1
-                            surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].node2 = nodes_moved_dict[pair_triangle_vertexid]
-                        else:
-                            # this_triangleの各nodeを再定義
-                            surfacetriangle_moved.node1 = nodes_moved_dict[pair_triangle_vertexid]
-                            surfacetriangle_moved.node2 = node1
-                            # pair_triangleの各nodeを再定義
-                            surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].node0 = node0
-                            surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].node1 = node2
-                            surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].node2 = nodes_moved_dict[pair_triangle_vertexid]
-                        # swap後、法線ベクトルの再計算
-                        surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline)
-                        surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].calc_unitnormal(nodes_targetcenterline)
-                        # swap後、this triangleとpair triangle を swap済みにする
-                        surfacetriangle_moved.already_swaped = True
-                        surfacetriangle_moved_dict[pair_dict.get_value(node1.id,node2.id)].already_swaped = True
-                        config.edgeswap_count+=1
-                        print(f"do edgeswap at triangle {surfacetriangle.id}")
-
-        # node2 とnode0 に対して 
-        if pair_dict.get_value(node2.id, node0.id) == None:
-            pair_dict.add_pair(node2.id, node0.id, surfacetriangle.id)
-        else:
-            pair_triangle = surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)]
-            if pair_triangle.already_swaped == False and surfacetriangle_moved.already_swaped == False:  
-                pair_triangle_nodeids =  {pair_triangle.node0.id, pair_triangle.node1.id, pair_triangle.node2.id}
-                pair_triangle_vertexid = next(iter(pair_triangle_nodeids-{node2.id, node0.id}))
-                if utility.can_P_project_to_AB(node1,node2,node0) and utility.can_P_project_to_AB(nodes_moved_dict[pair_triangle_vertexid],node2,node0):
-                    this_triangle_quality  = cell.calc_cell_quality(node0,node1,node2)
-                    pair_triangle_quality  = cell.calc_cell_quality(node0,node2,nodes_moved_dict[pair_triangle_vertexid])
-                    temp_triangle1_quality = cell.calc_cell_quality(node0,node1,nodes_moved_dict[pair_triangle_vertexid])
-                    temp_triangle2_quality = cell.calc_cell_quality(node1,node2,nodes_moved_dict[pair_triangle_vertexid])
-                    vec_temp1 = np.array([node0.x - node2.x, node0.y - node2.y, node0.z - node2.z])
-                    vec_temp2 = np.array([node1.x - node2.x, node1.y - node2.y, node1.z - node2.z])
-                    if ( min(this_triangle_quality, pair_triangle_quality) >= min(temp_triangle1_quality, temp_triangle2_quality) and 
-                            max(this_triangle_quality, pair_triangle_quality) >= max(temp_triangle1_quality, temp_triangle2_quality) ):
-                        # node0, node1, node2 が反時計回りに並んでいるか確証が持てないので、一応次のように場合分けして処理
-                        if np.dot(surfacetriangle_moved.unitnormal_out, np.cross(vec_temp1,vec_temp2)) >=0:
-                            # this_triangleの各nodeを再定義
-                            surfacetriangle_moved.node2 = nodes_moved_dict[pair_triangle_vertexid]
-                            # pair_triangleの各nodeを再定義
-                            surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].node0 = nodes_moved_dict[pair_triangle_vertexid]
-                            surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].node1 = node1
-                            surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].node2 = node2
-                        else:
-                            # this_triangleの各nodeを再定義
-                            surfacetriangle_moved.node0 = node1
-                            surfacetriangle_moved.node1 = nodes_moved_dict[pair_triangle_vertexid]
-                            # pair_triangleの各nodeを再定義
-                            surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].node0 = node0
-                            surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].node1 = nodes_moved_dict[pair_triangle_vertexid]
-                            surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].node2 = node1
-                        # swap後、法線ベクトルの再計算
-                        surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline)
-                        surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].calc_unitnormal(nodes_targetcenterline)
-                        # swap後、this triangleとpair triangle を swap済みにする
-                        surfacetriangle_moved.already_swaped = True
-                        surfacetriangle_moved_dict[pair_dict.get_value(node2.id,node0.id)].already_swaped = True
-                        config.edgeswap_count+=1
-                        print(f"do edgeswap at triangle {surfacetriangle.id}")
-        #ここまで、edgeswap用のコード
-
         surfacetriangle_moved.correspond_centerlinenode = surfacetriangle.correspond_centerlinenode 
         surfacetriangles_moved.append(surfacetriangle_moved)
+    # edgeswap を実行
+    if do_edgeswap == True:
+        while config.edgeswap_count_pre != config.edgeswap_count : 
+            surfacetriangles_moved = edgeswap.edgeswap(surfacetriangles_moved, surfacetriangle_moved_dict, nodes_moved_dict, nodes_targetcenterline)
+    
+    for surfacetriangle_moved in surfacetriangles_moved :   
         mesh.triangles_WALL.append(surfacetriangle_moved)
         mesh.num_of_elements += 1
 
