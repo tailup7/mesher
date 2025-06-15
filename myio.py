@@ -2,7 +2,6 @@ import node
 import cell
 import config
 import utility
-import sys
 import os
 from pathlib import Path
 import pandas as pd
@@ -48,17 +47,20 @@ def select_vtk():
     return filepath
 
 def write_txt_parameter():
-    if not os.path.exists("output"):
-        os.makedirs("output")
+    folder_name = "output"
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
     filepath = os.path.join("output", "memo.txt")
-    memo=f"""num of centerlinenodes  : {config.num_of_centerlinenodes} 
-MESHSIZE                : {config.MESHSIZE}
-MESHSIZE_SCALING_FACTOR : {config.SCALING_FACTOR}
-FIRST_LAYER_RATIO       : {config.FIRST_LAYER_RATIO}
-GROWTH_RATE             : {config.GROWTH_RATE}
-NUM_OF_LAYERS           : {config.NUM_OF_LAYERS}"""
+    lines = [
+    f"num of centerlinenodes  : {config.num_of_centerlinenodes}",
+    f"MESHSIZE                : {config.MESHSIZE}",
+    f"MESHSIZE_SCALING_FACTOR : {config.SCALING_FACTOR}",
+    f"FIRST_LAYER_RATIO       : {config.FIRST_LAYER_RATIO}",
+    f"GROWTH_RATE             : {config.GROWTH_RATE}",
+    f"NUM_OF_LAYERS           : {config.NUM_OF_LAYERS}",]
     with open(filepath, "w") as f:
-        f.write(memo)
+        for line in lines:
+            f.write(line + "\n")
     
 # todo: original と targetで中心線の点数が違う時にerror出すように
 def read_csv_centerline(filepath):
@@ -168,6 +170,12 @@ def read_vtk_surfacemesh(filepath_vtk):
                 node1 = surfacenode_dict[cell_data[2]+1]
                 node2 = surfacenode_dict[cell_data[3]+1]
                 surfacetriangle = cell.Triangle(triangle_id, node0, node1, node2)
+                v0 = np.array([node1.x - node0.x, node1.y - node0.y, node1.z - node0.z ])
+                v1 = np.array([node2.x - node0.x, node2.y - node0.y, node2.z - node0.z ])
+                normal = np.cross(v0, v1)
+                unit_normal = normal / np.linalg.norm(normal)
+                surfacetriangle.unitnormal_out = unit_normal
+                surfacetriangle.unitnormal_in  = - unit_normal
                 surfacetriangles.append(surfacetriangle)
                 triangle_id += 1
     print("info_myio    : num of outersurface points is ",node_id-1)
@@ -281,7 +289,7 @@ def add_scalarinfo_to_surfacemesh_original_vtkfile(filepath_vtk,surfacetriangles
     with open(output_path, "w") as f:
         f.writelines(new_lines)
 
-def write_stl_innersurface(mesh,nodes_centerline,layernode_dict):
+def write_stl_innersurface(mesh,layernode_dict):
     filename = "innersurface_" + str(config.NUM_OF_LAYERS) + ".stl"
     filepath=os.path.join("output",filename)
     start = config.num_of_surfacetriangles*(config.NUM_OF_LAYERS-1)
@@ -295,7 +303,7 @@ def write_stl_innersurface(mesh,nodes_centerline,layernode_dict):
         node1 = layernode_dict[id1]
         node2 = layernode_dict[id2]
         triangle = cell.Triangle(i, node0, node1, node2)
-        triangle.calc_unitnormal(nodes_centerline)
+        triangle.calc_unitnormal()
         triangle_list.append(triangle)
     with open(filepath, 'w') as f:
         f.write("solid model\n")

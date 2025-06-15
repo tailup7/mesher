@@ -7,23 +7,17 @@ class Triangle:
         self.node1=node1
         self.node2=node2
         self.already_swaped = False # TODO : 継承で surfacetriangle_moved は別のクラスとして定義したい
+        self.unitnormal_in  = None
+        self.unitnormal_out = None
 
-    def calc_unitnormal(self, nodes_centerline):
+    #注意 : この関数は、triangle の 3つのnode(頂点)が、反時計回りに定義されていることを前提とする
+    def calc_unitnormal(self):
         vector0=np.array([self.node1.x-self.node0.x, self.node1.y-self.node0.y, self.node1.z-self.node0.z])
         vector1=np.array([self.node2.x-self.node0.x, self.node2.y-self.node0.y, self.node2.z-self.node0.z])
         normal = np.cross(vector0,vector1)
-        n0 = np.array([self.node0.x,self.node0.y,self.node0.z])
-        nc = np.array([ nodes_centerline[self.node0.closest_centerlinenode_id].x,
-                        nodes_centerline[self.node0.closest_centerlinenode_id].y,
-                        nodes_centerline[self.node0.closest_centerlinenode_id].z ])
-        vec_in = nc-n0
-        if np.dot(vec_in,normal)<0:
-            self.unitnormal_out = normal/np.linalg.norm(normal)
-            self.unitnormal_in = -self.unitnormal_out
-        else:
-            self.unitnormal_in = normal/np.linalg.norm(normal)
-            self.unitnormal_out = - self.unitnormal_in
-    
+        self.unitnormal_out = normal/np.linalg.norm(normal)
+        self.unitnormal_in = -self.unitnormal_out
+
     def calc_centroid(self):
         x = (self.node0.x + self.node1.x + self.node2.x)/3
         y = (self.node0.y + self.node1.y + self.node2.y)/3

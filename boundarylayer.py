@@ -58,6 +58,19 @@ def make_nthlayer_quad(i,nodes_centerline, nodes_on_inletboundaryedge, nodes_on_
         mesh.num_of_elements+=1
     return mesh
 
+# Gmshのプリズムは頂点を次の順で定義する
+# 「反時計回り, かつ, 底面→上面」
+#        
+#      3 ー ー 5
+#      | \   / |
+#      |  \ /  | 
+#      |   4   |
+#      |   |   |
+#      0---|---2
+#       \  |  /
+#        \ | /
+#          1
+
 def make_nthlayer_prism(n,surfacetriangles,mesh):
     for surfacetriangle in surfacetriangles:
         prism_id0=surfacetriangle.node0.id + config.num_of_surfacenodes*n

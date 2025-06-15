@@ -1,3 +1,4 @@
+EDGESWAP          = True
 MESHSIZE          = 0.5
 SCALING_FACTOR    = 0.15
 FIRST_LAYER_RATIO = 0.015

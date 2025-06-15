@@ -29,6 +29,7 @@ class PairDict:
     def get_value(self, a, b):
         return self.pair_dict.get(self._normalize_pair(a, b))
 
+# この関数は消す、使わないようにする。代わりにvmtkで出力される最大内接球の半径を使う
 def calc_radius(filepath_stl, filepath_centerline, nodes_centerline):
     # 半径計算のため、読み込んだ表面形状を細かく再メッシュ
     if not gmsh.isInitialized():
@@ -237,7 +238,10 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
         mesh.nodes.append(surfacenode)
         mesh.num_of_nodes += 1
     for surfacetriangle in surfacetriangles:
-        surfacetriangle.calc_unitnormal(nodes_centerline)                #
+        # vtkファイルは、三角形の頂点の記述順が反時計回りになっており、法線ベクトルの向きは暗示的に示されている。
+        # gmsh は そのルールを守ってvtkを出力してくれるので、stlを読み込んで中心線情報も使いながら自分で法線ベクトルを計算するのではなく、
+        # gmsh で出力されたvtkの法線ベクトルを使う。(断面が円形でない扁平な形状などだと、中心線を使っても法線ベクトルが外を向かないことがある)
+        # surfacetriangle.calc_unitnormal(nodes_centerline)                #
         surfacetriangle.calc_centroid()                                  #
         surfacetriangle.find_closest_centerlinenode(nodes_centerline)    #
         surfacetriangle.assign_correspondcenterlinenode_to_surfacenode()
@@ -254,14 +258,14 @@ def make_prismlayer(surfacenode_dict,surfacetriangles,mesh):
     print("start generating prism layer")
     # 内側 1 ~ n 層を作成
     for i in range(1,config.NUM_OF_LAYERS+1):
-        mesh,layernode_dict=boundarylayer.make_nthlayer_surfacenode(i, surfacenode_dict, surfacetriangles, mesh)
-        mesh=boundarylayer.make_nthlayer_prism(i,surfacetriangles,mesh)
+        mesh,layernode_dict = boundarylayer.make_nthlayer_surfacenode(i, surfacenode_dict, surfacetriangles, mesh)
+        mesh = boundarylayer.make_nthlayer_prism(i,surfacetriangles,mesh)
         config.num_of_boundarylayernodes = mesh.num_of_nodes
     print("finished generating prism layer")
     return mesh, layernode_dict
 
-def make_tetramesh(nodes_centerline,layernode_dict,mesh,filename):
-    filepath_stl_mostinner = myio.write_stl_innersurface(mesh,nodes_centerline,layernode_dict)
+def make_tetramesh(layernode_dict,mesh,filename):
+    filepath_stl_mostinner = myio.write_stl_innersurface(mesh,layernode_dict)
     gmsh.initialize()
     path = os.path.dirname(os.path.abspath(__file__))
     gmsh.merge(os.path.join(path, filepath_stl_mostinner))  
@@ -399,7 +403,7 @@ def naming_inlet_outlet(mesh,nodes_centerline):
     print("naming INLET OUTLET to quadrangles on surface.")
     return mesh
 
-def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,surfacenodes,surfacetriangles,mesh, do_edgeswap):
+def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,surfacenodes,surfacetriangles,mesh):
     print("start deforming surface mesh")
     for i in range(config.num_of_centerlinenodes):
         nodes_centerline[i].calc_tangentvec(nodes_centerline)
@@ -450,14 +454,14 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         node1 = nodes_moved_dict[surfacetriangle.node1.id]
         node2 = nodes_moved_dict[surfacetriangle.node2.id]
         surfacetriangle_moved = cell.Triangle(surfacetriangle.id,node0,node1,node2)
-        surfacetriangle_moved.calc_unitnormal(nodes_targetcenterline) # edgeswap 関数内の if np.dot(surfacetri... の判定で使用。またswapした後にも再計算
+        surfacetriangle_moved.calc_unitnormal() 
         surfacetriangle_moved_dict[surfacetriangle.id] = surfacetriangle_moved
         surfacetriangle_moved.correspond_centerlinenode = surfacetriangle.correspond_centerlinenode 
         surfacetriangles_moved.append(surfacetriangle_moved)
     # edgeswap を実行
-    if do_edgeswap == True:
+    if config.EDGESWAP == True:
         while config.edgeswap_count_pre != config.edgeswap_count : 
-            surfacetriangles_moved = edgeswap.edgeswap(surfacetriangles_moved, surfacetriangle_moved_dict, nodes_moved_dict, nodes_targetcenterline)
+            surfacetriangles_moved = edgeswap.edgeswap(surfacetriangles_moved, surfacetriangle_moved_dict, nodes_moved_dict)
     
     for surfacetriangle_moved in surfacetriangles_moved :   
         mesh.triangles_WALL.append(surfacetriangle_moved)

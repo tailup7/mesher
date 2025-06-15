@@ -153,3 +153,21 @@ def moving_average_for_tangentvec(nodes_centerline):
         tangentvec_smoothed_list[i] = sum(node.tangentvec for node in nodes_centerline[i-3:i+4]) / 7
     for i in range(config.num_of_centerlinenodes):
         nodes_centerline[i].tangentvec = tangentvec_smoothed_list[i]
+
+# vmtk等で抽出した中心線は摂動を含むので、隣接11点(左側5点+自分自身+右側5点)の移動平均で平滑化する
+def moving_average_for_tangentvec_ver2(nodes_centerline):
+    tangentvec_smoothed_list = [0]*config.num_of_centerlinenodes
+    tangentvec_smoothed_list[0] = sum(node.tangentvec for node in nodes_centerline[:6]) / 6
+    tangentvec_smoothed_list[1] = sum(node.tangentvec for node in nodes_centerline[:7]) / 7
+    tangentvec_smoothed_list[2] = sum(node.tangentvec for node in nodes_centerline[:8]) / 8
+    tangentvec_smoothed_list[3] = sum(node.tangentvec for node in nodes_centerline[:9]) / 9
+    tangentvec_smoothed_list[4] = sum(node.tangentvec for node in nodes_centerline[:10]) / 10
+    tangentvec_smoothed_list[-1] = sum(node.tangentvec for node in nodes_centerline[-6:]) / 6
+    tangentvec_smoothed_list[-2] = sum(node.tangentvec for node in nodes_centerline[-7:]) / 7
+    tangentvec_smoothed_list[-3] = sum(node.tangentvec for node in nodes_centerline[-8:]) / 8
+    tangentvec_smoothed_list[-4] = sum(node.tangentvec for node in nodes_centerline[-9:]) / 9
+    tangentvec_smoothed_list[-5] = sum(node.tangentvec for node in nodes_centerline[-10:]) / 10
+    for i in range(5,config.num_of_centerlinenodes-5):
+        tangentvec_smoothed_list[i] = sum(node.tangentvec for node in nodes_centerline[i-5:i+6]) / 11
+    for i in range(config.num_of_centerlinenodes):
+        nodes_centerline[i].tangentvec = tangentvec_smoothed_list[i]

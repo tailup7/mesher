@@ -32,7 +32,8 @@ class NodeCenterline:
                                         self.y-nodes_centerline[self.id].y,
                                         self.z-nodes_centerline[self.id].z])
 
-    def calc_rotation_matrix(self,nodes_centerline):
+    # a から b への回転行列 ( b = R a ) 
+    def calc_rotation_matrix(self,nodes_centerline): # 引数はもう一方の中心線
         identity_matrix=np.array([[1,0,0],[0,1,0],[0,0,1]])
         a=nodes_centerline[self.id].tangentvec
         b=self.tangentvec
@@ -62,7 +63,7 @@ class NodeAny:
         self.x = x
         self.y = y
         self.z = z
-        self.closest_centerlinenode_id = None
+        self.closest_centerlinenode_id       = None
         self.closest_centerlinenode_distance = None
         self.projectable_centerlineedge_id = None
         self.projectable_centerlineedge_distance = None
