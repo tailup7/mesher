@@ -421,10 +421,10 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
         surfacenode_moved=node.NodeMoved(surfacenode.id,0,0,0)
         countor=0
         for correspond_centerlinenode in surfacenode.correspond_centerlinenodes:
-            surfacenode_moved.x += correspond_centerlinenode.x # 複数のcorrespond_centerlinenode がある場合、起点が複数になってしまう。
+            surfacenode_moved.x += correspond_centerlinenode.x # 複数のcorrespond_centerlinenode がある場合、起点が複数になる。
             surfacenode_moved.y += correspond_centerlinenode.y
             surfacenode_moved.z += correspond_centerlinenode.z
-            localvec = utility.vector(surfacenode)-utility.vector(correspond_centerlinenode)
+            localvec = utility.vector(surfacenode) - utility.vector(correspond_centerlinenode)
             movementvec = (nodes_targetcenterline[correspond_centerlinenode.id].parallel_vec +
                                 nodes_targetcenterline[correspond_centerlinenode.id].rotation_matrix @ localvec)
             surfacenode_moved.x += movementvec[0]

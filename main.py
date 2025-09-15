@@ -58,14 +58,25 @@ def meshing():
     print("-------- Finished Make Mesh --------")
     print(f"elapsed time : {elapsed_time:.4f} s")
 
-def deform():
+def deform(did_meshing):   # 引数にdid_meshingを加える
     start=time.time()
     print("-------- Start Deform Mesh --------")
     filepath_original = myio.select_csv("original")
     filepath_target = myio.select_csv("target")
     mesh_deform = meshinfo.Mesh()
-    global surfacenodes
-    global surfacetriangles
+    # if文で下2行を囲む
+    if did_meshing == True:
+        global surfacenodes                     ### ここはdid_meshing == Trueのとき
+        global surfacetriangles                #### ここはdid_meshing==Trueのとき
+    # elif did_meshing == False:
+    #    surfacenodes, surfacetriangles = myio.read_vtk_surfacemesh    ( meshing/deform の meshing でも元のstlメッシュのままmeshingしたいときは、
+    #                                                                    func.make_surfacemeshを分割する )
+    #    func.make_surfacemeshの後半部分
+    #    surfacetriangle.assign_correspondcenterlinenode_to_surfacenode() の処理を含める必要がある(deform_surfaceで使う)
+    #    なのでやはり func.make_surfacemeshを分割して、
+    #    func.make_surfacemesh()
+    #    myio.read_and_correspond_surfacemesh(surfacemesh_original.vtk, centerline_original.csv) のようにした方がいい 
+    #   また、config.num_of_surfacenodesをどこかで格納する必要がある。make_prismlayerで使う
     nodes_centerline, radius_list_original = myio.read_csv_centerline(filepath_original)
     nodes_targetcenterline, radius_list_target = myio.read_csv_centerline(filepath_target)
     filepath_surfacemesh_deformed, nodes_moved_dict, surfacetriangles_moved, mesh_deform = func.deform_surface(nodes_targetcenterline,  
@@ -102,21 +113,20 @@ def ask_which(did_meshing):
     try:
         if which == "m":
             meshing()
-            did_meshing=True
-        elif which == "d" and did_meshing == True:
-            while True:
-                edgeswap_input = input("Do edgeswap? (y/n): ").strip().lower()
-                if edgeswap_input in ("y", "n"):
-                    config.EDGESWAP = (edgeswap_input == "y")
-                    with open("output/memo.txt", "a") as f:
-                        f.write(f"edge_swap               : {config.EDGESWAP}\n")
-                    break
-                else:
-                    print("Invalid input. Please enter 'y' or 'n'.")
-            deform()
-        elif which == "d" and did_meshing == False:
-            print("This procedure is currently in preparation. Please meshing first, sorry... ;;")
-            sys.exit()
+            did_meshing = True
+
+        elif which == "d":
+            if did_meshing == False:
+                input_meshing_parameter()
+            edgeswap_input = input("Do edgeswap? (y/n): ").strip().lower()
+            if edgeswap_input in ("y", "n"):
+                config.EDGESWAP = (edgeswap_input == "y")
+                with open("output/memo.txt", "a") as f:
+                    f.write(f"edge_swap               : {config.EDGESWAP}\n")
+            else:
+                print("Invalid input. Please enter 'y' or 'n'.")
+            deform(did_meshing)
+
         else:
             print("Invalid input. Please enter 'm' for Meshing or 'd' for Deform.")
     except ValueError:
