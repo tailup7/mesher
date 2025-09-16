@@ -188,10 +188,9 @@ def generate_pos_bgm(filepath, nodes_centerline,radius_list,filename, classify_p
         node_any.set_edgeradius(radius_list)
     tetra_list = myio.read_msh_tetra(msh_file)
     filepath_pos=myio.write_pos_bgm(tetra_list,nodeany_dict,filename)
-
     gmsh.finalize()
 
-def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
+def make_surfacemesh(filepath_stl, filename):  
     if not gmsh.isInitialized():
         gmsh.initialize()
     path = os.path.dirname(os.path.abspath(__file__))
@@ -219,15 +218,20 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
 
     gmsh.model.mesh.generate(2)
     gmsh.model.mesh.optimize()
-    output_folder = "output"
-    vtk_file = os.path.join(output_folder, f"surfacemesh_{filename}.vtk")
-    stl_file = os.path.join(output_folder, f"surfacemesh_{filename}.stl")
-    gmsh.write(vtk_file)
-    gmsh.write(stl_file)
+
+    os.makedirs("output", exist_ok=True)
+    output_vtk_filepath = os.path.abspath(os.path.join("output", f"surfacemesh_{filename}.vtk"))
+    output_stl_filepath = os.path.abspath(os.path.join("output", f"surfacemesh_{filename}.stl"))
+    gmsh.write(output_vtk_filepath)
+    gmsh.write(output_stl_filepath)
     print(f"output surfacemesh_{filename}.vtk")
     print(f"output surfacemesh_{filename}.stl")
     
-    surfacenodes,surfacetriangles = myio.read_vtk_surfacemesh(vtk_file)
+    surfacenodes,surfacetriangles = myio.read_vtk_surfacemesh(output_vtk_filepath)
+    gmsh.finalize()
+    return surfacenodes, surfacetriangles, output_vtk_filepath 
+
+def correspond_surface_to_centerlinenode(surfacenodes, surfacetriangles, nodes_centerline, radius_list, mesh, filepath_vtk_original):
     print("info_func    : start corresponding surface mesh triangles to centerline nodes") 
     surfacenode_dict={}
     for surfacenode in surfacenodes:
@@ -241,6 +245,10 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
         # vtkファイルは、三角形の頂点の記述順が反時計回りになっており、法線ベクトルの向きは暗示的に示されている。
         # gmsh は そのルールを守ってvtkを出力してくれるので、stlを読み込んで中心線情報も使いながら自分で法線ベクトルを計算するのではなく、
         # gmsh で出力されたvtkの法線ベクトルを使う。(断面が円形でない扁平な形状などだと、中心線を使っても法線ベクトルが外を向かないことがある)
+        #
+        # ↑ STLも法線(facet normal)と整合するように頂点を記述する。どちらかというと、make_surfacemeshでvtkとして出力するのは、
+        # vtkは頂点をID管理するが、STLはしないため、頂点にIDを与えて重複排除する処理が面倒だったから。
+        # (ついでに add_scalarinfo でvtkfileとして生成する必要がある、、、)
         # surfacetriangle.calc_unitnormal(nodes_centerline)                #
         surfacetriangle.calc_centroid()                                  #
         surfacetriangle.find_closest_centerlinenode(nodes_centerline)    #
@@ -248,11 +256,11 @@ def make_surfacemesh(filepath_stl,nodes_centerline, radius_list,mesh,filename):
         mesh.triangles_WALL.append(surfacetriangle)
         mesh.num_of_elements += 1
 
-    myio.add_scalarinfo_to_surfacemesh_original_vtkfile(vtk_file,surfacetriangles)
+    myio.add_scalarinfo_to_surfacemesh_original_vtkfile(filepath_vtk_original,surfacetriangles)
     print("info_func    : finish corresponding surface mesh triangles to centerline nodes")
     print("info_myio    : output surfacemesh_original_with_ccnID.vtk.")
-    gmsh.finalize()
-    return surfacenode_dict, surfacenodes, surfacetriangles, mesh
+
+    return surfacenode_dict
 
 def make_prismlayer(surfacenode_dict,surfacetriangles,mesh):
     print("start generating prism layer")
@@ -420,7 +428,7 @@ def deform_surface(nodes_targetcenterline, radius_list_target, nodes_centerline,
     for surfacenode in surfacenodes:
         surfacenode_moved=node.NodeMoved(surfacenode.id,0,0,0)
         countor=0
-        for correspond_centerlinenode in surfacenode.correspond_centerlinenodes:
+        for correspond_centerlinenode in surfacenode.correspond_centerlinenodes:   ### ここ
             surfacenode_moved.x += correspond_centerlinenode.x # 複数のcorrespond_centerlinenode がある場合、起点が複数になる。
             surfacenode_moved.y += correspond_centerlinenode.y
             surfacenode_moved.z += correspond_centerlinenode.z

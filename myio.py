@@ -10,6 +10,7 @@ from numpy.polynomial.polynomial import Polynomial
 import tkinter as tk
 from tkinter import filedialog
 
+# 絶対パスの取得
 def select_csv(message):
     root = tk.Tk()
     root.withdraw() 
@@ -22,6 +23,7 @@ def select_csv(message):
     root.destroy()
     return filepath
 
+#絶対パスの取得
 def select_stl():
     root = tk.Tk()
     root.withdraw()
@@ -34,6 +36,7 @@ def select_stl():
     root.destroy()
     return filepath
 
+# 絶対パスの取得
 def select_vtk():
     root = tk.Tk()
     root.withdraw()
@@ -45,6 +48,22 @@ def select_vtk():
     )
     root.destroy()
     return filepath
+
+def input_meshing_parameter():
+    print("------- mesh parameter -------")
+    print("MESHSIZE_SCALING_FACTOR :", config.SCALING_FACTOR)
+    print("FIRST_LAYER_RATIO       :", config.FIRST_LAYER_RATIO)
+    print("GROWTH_RATE             :", config.GROWTH_RATE)
+    print("NUM_OF_LAYERS           :", config.NUM_OF_LAYERS)
+    change = input("Change parameters? (y/n): ").strip().lower()
+    if change == "y":
+        try:
+            config.SCALING_FACTOR    = float(input("Enter MESHSIZE_SCALING_FACOTOR: "))
+            config.FIRST_LAYER_RATIO = float(input("Enter FIRST_LAYER_RATIO: "))
+            config.GROWTH_RATE       = float(input("Enter GROWTH_RATE: "))
+            config.NUM_OF_LAYERS     = int(input("Enter NUM_OF_LAYERS: "))
+        except ValueError:
+            print("Invalid input. Using default values.")
 
 def write_txt_parameter():
     folder_name = "output"
@@ -127,6 +146,7 @@ def write_pos_bgm(tetra_list,nodeany_dict,filename):
     print(f"output bgm_{filename}.pos")
     return filepath
 
+# vtk の file formatでは node番号は0スタートだが、gmsh のmesh format 2.2 0 8 は1スタートで、コード内では gmsh に合わせて node_idを1スタートにする
 def read_vtk_surfacemesh(filepath_vtk):
     with open(filepath_vtk, 'r') as file:
         lines = file.readlines()
@@ -584,3 +604,68 @@ def write_msh_allmesh(mesh,filename):
             f.write(f"{elements_countor} 6 2 100 1 {prism.id0} {prism.id1} {prism.id2} {prism.id3} {prism.id4} {prism.id5}\n")
 
         f.write("$EndElements\n")
+
+
+def convert_stl_to_vtk(filepath_stl):
+    # 入力ファイルの拡張子無しのファイル名
+    filename_without_ext = os.path.splitext(os.path.basename(filepath_stl))[0]
+
+    output_filename = filename_without_ext + ".vtk"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.makedirs(os.path.join(script_dir, "output"), exist_ok=True)
+    output_filepath = os.path.join(script_dir, "output", output_filename)
+
+    triangles = []
+    with open(filepath_stl, 'r') as f:
+        lines = f.readlines()
+
+    current_triangle = []
+    for line in lines:
+        parts = line.strip().split()
+        if len(parts) >= 4 and parts[0].lower() == 'vertex':
+            x, y, z = map(float, parts[1:4])
+            current_triangle.append((x, y, z))
+            if len(current_triangle) == 3:
+                triangles.append(tuple(current_triangle))
+                current_triangle = []
+
+    points = []
+    point_index = {}
+    cells = []
+
+    for tri in triangles:
+        cell = []
+        for p in tri:
+            if p not in point_index:
+                point_index[p] = len(points)
+                points.append(p)
+            cell.append(point_index[p])
+        cells.append(cell)
+
+    # 出力
+    with open(output_filepath, 'w') as f:
+        f.write('# vtk DataFile Version 2.0\n')
+        f.write('Converted from STL\n')
+        f.write('ASCII\n')
+        f.write('DATASET UNSTRUCTURED_GRID\n')
+        
+        # POINTS
+        f.write(f'POINTS {len(points)} double\n')
+        for x, y, z in points:
+            f.write(f'{x} {y} {z}\n')
+        f.write('\n')
+
+        # CELLS
+        total_size = len(cells)*4
+        f.write(f'CELLS {len(cells)} {total_size}\n')
+        for c in cells:
+            f.write(f'3 {c[0]} {c[1]} {c[2]}\n')
+        f.write('\n')
+        
+        # CELL_TYPES
+        f.write(f'CELL_TYPES {len(cells)}\n')
+        for _ in cells:
+            f.write('5\n')
+    
+    print(f"finished stl_to_vtk convert: {output_filename}")
+    return output_filepath
