@@ -49,6 +49,23 @@ def select_vtk():
     root.destroy()
     return filepath
 
+# 絶対パスの取得
+def select_surface():
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)  
+    filepath = filedialog.askopenfilename(
+        title="Select surface file",
+        filetypes=[
+            ("STL files", "*.stl"),
+            ("VTK files", "*.vtk"),
+            ("All supported files", "*.stl *.vtk") 
+        ],
+        parent=root
+    )
+    root.destroy()
+    return filepath
+
 def input_meshing_parameter():
     print("------- mesh parameter -------")
     print("MESHSIZE_SCALING_FACTOR :", config.SCALING_FACTOR)
@@ -382,30 +399,37 @@ LOOKUP_TABLE default\n"""
         for tri in surfacetriangles:
             f.write(f"{tri.correspond_centerlinenode.id-1}\n")
 
-def write_vtk_hausdorff(surfacenodes,haus):
+def write_vtk_hausdorff(surfacenodes, surfacetriangles, haus):
     if not os.path.exists("output"):
         os.makedirs("output")
-    filepath=os.path.join("output","hausdorff.vtk")
-    point_header=f"""# vtk DataFile Version 2.0
-HEADER
-ASCII
-DATASET POLYDATA
-POINTS {len(surfacenodes)} float\n"""
-    polygons_header=f"""POLYGONS {len(surfacenodes)} {2*len(surfacenodes)}\n"""
-    celldata_header=f"""CELL_DATA {len(surfacenodes)}
-FIELD FieldData 1
-haus 1 {len(surfacenodes)} float\n"""
-    
+    filepath = os.path.join("output", "hausdorff.vtk")
+
+    # 三角形セル数とPOLYGONS要素数 (4*n_triangles): 3+頂点数
+    n_points = len(surfacenodes)
+    n_tri = len(surfacetriangles)
+
     with open(filepath, "w") as f:
-        f.write(point_header)
+        # --- ヘッダ ---
+        f.write("# vtk DataFile Version 2.0\n")
+        f.write("Hausdorff distance\n")
+        f.write("ASCII\n")
+        f.write("DATASET POLYDATA\n")
+        # --- 頂点座標 ---
+        f.write(f"POINTS {n_points} float\n")
         for pt in surfacenodes:
             f.write(f"{pt.x} {pt.y} {pt.z}\n")
-        f.write(polygons_header)
-        for i in range(len(surfacenodes)):
-            f.write(f"1 {i}\n")
-        f.write(celldata_header)
-        for i in range(len(surfacenodes)):
-            f.write(f"{haus[i]}\n")
+        # --- 三角形セル ---
+        # POLYGONS n_triangles total_index_count
+        # total_index_count = n_triangles * (1 + 3)
+        f.write(f"POLYGONS {n_tri} {n_tri * 4}\n")
+        for tri in surfacetriangles:
+            f.write(f"3 {tri.node0.id - 1} {tri.node1.id - 1} {tri.node2.id - 1}\n")
+        # --- スカラー（ポイントデータ） ---
+        f.write(f"POINT_DATA {n_points}\n")
+        f.write("SCALARS haus float 1\n")
+        f.write("LOOKUP_TABLE default\n")
+        for v in haus:
+            f.write(f"{v}\n")
 
 def read_msh_innermesh(filepath,mesh):
     node_innermesh_dict={}
