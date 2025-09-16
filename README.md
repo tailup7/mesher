@@ -22,11 +22,15 @@ This is code that automatically generates a tetra-prism hybrid mesh (* .msh) fro
 + Change directory containing the copied files. 
 + Make python venv and install requirements.txt (https://qiita.com/shun_sakamoto/items/7944d0ac4d30edf91fde).
 + If you don't install Gmsh itself, please delete the next sentence in the main.py.
-+ ``` gmsh.fltk.run() ```
++ ```
+  gmsh.fltk.run()
+  ```
 + and then,
-+ ``` python main.py ```
++ ```
+  $ python main.py
+  ```
   + I recommend installing Gmsh itself. With it, you can open (*.msh) files in the viewer.
-  + (If you don't have gmsh, please view the allmesh.vtk file with paraview.)
+  + (If you don't have gmsh, please view the output file `allmesh_   .vtk` with paraview.)
 
 ## input data
 <p align="left">
@@ -42,8 +46,9 @@ Shapes with bifurcations cannot be meshed >_<.
 </p>
 
 # Deform Mesh 
-You can also deform mesh and do fluid analysis.
+You can also deform mesh and do fluid analysis. In order to deform mesh, you need additional centerline point cloud (*.csv) as a deformation target. If the target centerline include radius information along centerline, the mesh also can be deformed with radial direction.
 
 <p align="left">
   <img src="https://github.com/tailup7/mesher/blob/main/picture/deform.png" alt="meshing" width="800"/>
 </p>
+
