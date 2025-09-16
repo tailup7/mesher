@@ -57,9 +57,9 @@ def select_surface():
     filepath = filedialog.askopenfilename(
         title="Select surface file",
         filetypes=[
+            ("All supported files", "*.stl *.vtk"),
             ("STL files", "*.stl"),
-            ("VTK files", "*.vtk"),
-            ("All supported files", "*.stl *.vtk") 
+            ("VTK files", "*.vtk")
         ],
         parent=root
     )
